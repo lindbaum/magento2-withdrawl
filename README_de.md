@@ -1,4 +1,4 @@
-# Widerrufsbutton fuer Magento 2
+# Widerrufsbutton für Magento 2
 
 > Magento 2 Erweiterung zur Umsetzung des EU-Widerrufsrechts per Button-Klick.
 > Entwickelt von **Zwernemann Medienentwicklung**.
@@ -7,7 +7,7 @@
 
 ## Worum geht es?
 
-Die EU-Richtlinie **(EU) 2023/2673** schreibt vor, dass Verbraucher Online-Kaufvertraege kuenftig genauso einfach widerrufen koennen muessen, wie sie abgeschlossen wurden. **Ab dem 19. Juni 2026** ist ein gut sichtbarer Widerrufsbutton in Online-Shops Pflicht.
+Die EU-Richtlinie **(EU) 2023/2673** schreibt vor, dass Verbraucher Online-Kaufvertraege künftig genauso einfach widerrufen koennen muessen, wie sie abgeschlossen wurden. **Ab dem 19. Juni 2026** ist ein gut sichtbarer Widerrufsbutton in Online-Shops Pflicht.
 
 Dieses Magento 2 Modul liefert genau das: Ihre Kunden koennen Bestellungen mit wenigen Klicks widerrufen -- direkt aus dem Kundenkonto oder ueber ein separates Formular fuer Gastbestellungen. Sie als Shopbetreiber behalten dabei den vollen Ueberblick im Adminbereich.
 
@@ -15,7 +15,7 @@ Dieses Magento 2 Modul liefert genau das: Ihre Kunden koennen Bestellungen mit w
 
 ## Was macht das Modul?
 
-### Fuer Ihre Kunden
+### Für Ihre Kunden
 
 **Widerrufsbutton in der Bestelluebersicht**
 
@@ -25,7 +25,7 @@ In der Ansicht *Mein Konto > Meine Bestellungen* erscheint pro Bestellung eine n
 - Den Hinweis **"Widerruf eingereicht"**, falls bereits widerrufen wurde
 - Den Hinweis **"Frist abgelaufen"**, wenn die Widerrufsfrist verstrichen ist
 
-Zusaetzlich wird auf der Bestelldetailseite ein **"Bestellung widerrufen"**-Button angezeigt.
+Zusätzlich wird auf der Bestelldetailseite ein **"Bestellung widerrufen"**-Button angezeigt.
 
 **Widerrufs-Detailseite**
 
@@ -46,11 +46,11 @@ Erreichbar unter: `/withdrawal/guest/search`
 
 Nach dem Absenden wird der Kunde auf eine Erfolgsseite weitergeleitet. Dort wird bestaetigt, dass der Widerruf eingegangen ist und eine E-Mail unterwegs ist.
 
-### Fuer Sie als Shopbetreiber
+### Für Sie als Shopbetreiber
 
 **Admin-Uebersicht aller Widerrufe**
 
-Unter *Verkaeufe > Withdrawals* finden Sie eine tabellarische Uebersicht saemtlicher eingegangener Widerrufe:
+Unter *Verkäufe > Withdrawals* finden Sie eine tabellarische Uebersicht saemtlicher eingegangener Widerrufe:
 
 - ID, Bestellnummer, Kundenname, E-Mail
 - Status (Ausstehend / Bestaetigt / Abgelehnt)
@@ -66,7 +66,7 @@ Sobald ein Widerruf eingeht, werden zwei E-Mails verschickt:
 1. **An den Kunden** -- Bestaetigung mit Bestelldetails
 2. **An Sie** -- Benachrichtigung mit allen relevanten Daten
 
-Zusaetzlich erhalten Sie eine BCC-Kopie der Kundenmail. Die E-Mail-Vorlagen lassen sich im Admin anpassen.
+Zusätzlich erhalten Sie eine BCC-Kopie der Kundenmail. Die E-Mail-Vorlagen lassen sich im Admin anpassen.
 
 **Vermerk in der Bestellung**
 
@@ -145,6 +145,18 @@ Dieses Modul ergänzt die erforderliche Hyvä-Frontend-Integration für den Wide
 
 Das Basismodul bleibt weiterhin erforderlich.
 
+---
+
+## Hyvä-Theme-Kompatibilität
+
+Wenn Sie das Hyvä-Theme verwenden, installieren Sie bitte das Hyvä-Kompatibilitätsmodul:
+
+https://github.com/Zwernemann/magento2-withdrawl-hyva
+
+Dieses Modul ergänzt die erforderliche Hyvä-Frontend-Integration für den Widerrufs-Button und stellt die Kompatibilität mit dem Hyvä-Template-System sicher.
+
+Das Basismodul bleibt weiterhin erforderlich.
+
 ### REST API
 
 Der REST API-Endpunkt `/V1/zwernemann/withdrawals` enthält nun:
@@ -164,7 +176,7 @@ Zugriff ist per ACL-Berechtigung geschuetzt (`Zwernemann_Withdrawal::withdrawals
 
 ### Mehrsprachigkeit
 
-Komplett uebersetzt in **Deutsch** und **Englisch** (97 Zeichenketten). Weitere Sprachen koennen ueber eigene CSV-Dateien ergaenzt werden.
+Komplett uebersetzt in alle offiziellen 24 Sprachen der EU (je 97 Zeichenketten). Weitere Sprachen koennen ueber eigene CSV-Dateien ergaenzt werden.
 
 ---
 
@@ -172,10 +184,9 @@ Komplett uebersetzt in **Deutsch** und **Englisch** (97 Zeichenketten). Weitere 
 
 | Komponente | Version |
 |---|---|
-| Magento 2 Open Source | 2.4.6 bis 2.4.8-p1 |
+| Magento 2 Open Source | 2.4.6 bis 2.4.8-p4 |
 | PHP | 7.4 oder hoeher |
 
-Sie nutzen eine andere Magento-Version? Lassen Sie es uns wissen -- wir testen gerne.
 
 ---
 
@@ -278,7 +289,14 @@ Die Datenbanktabelle `zwernemann_withdrawal` bleibt erhalten und kann bei Bedarf
 
 ## Versionshistorie
 
-### Versionshistorie
+### 1.5.0
+- Neu hinzugefügte Sprachen: Bulgarisch, Dänisch, Estnisch, Finnisch, Französisch, Griechisch, Irisch, Italienisch, Kroatisch, Lettisch, Litauisch, Maltesisch, Niederländisch, Polnisch, Portugiesisch, Rumänisch, Schwedisch, Slowakisch, Slowenisch, Spanisch, Tschechisch, Ungarisch. Das Modul unterstützt jetzt alle 24 offiziellen Amtssprachen der Europäischen Union. Alle Übersetzungen verwenden den juristisch korrekten Begriff für das gesetzliche Widerrufsrecht gemäß EU-Verbraucherrechterichtlinie (2011/83/EU).
+
+### 1.4.0
+
+- Deleted the version attribute from composer.json. Composer has great integration with version control systems Git and there is no need to manually track version numbers in a text file for Composer at all. The field only exists for special situations where a version control system is not in use.
+
+### 1.3.0
 
 ## Über diese Version
 
@@ -345,7 +363,26 @@ Diese Version enthält eine umfassende **Code Review und Dokumentationsaktualisi
 
 ---
 
-## Dokumentation
+## Geplant
+
+- REST API um Schreibzugriffe erweitern
+- Individuelle Widerrufsfristen pro Produkt (ueber Produktattribute)
+
+---
+
+## Kontakt & Support
+
+**Zwernemann Medienentwicklung**\
+Martin Zwernemann\
+79730 Murg
+
+[Zur Website](https://www.zwernemann.de/widerrufsbutton-fuer-magento-2/)
+
+Bei Fragen, Problemen oder Ideen fuer neue Funktionen -- melden Sie sich gerne.
+
+---
+
+## Lizenz
 
 - **`README.md`** - Englische Übersicht
 - **`README_de.md`** - Diese Datei (deutsche Übersicht)
