@@ -104,7 +104,7 @@ Access is protected by ACL permission (`Zwernemann_Withdrawal::withdrawals`).
 
 ### Multilingualism
 
-Completely translated into **German** and **English** (97 strings). Further languages can be added via custom CSV files.
+Completely translated into all 24 languages of the EU (97 strings). Further languages can be added via custom CSV files.
 
 ---
 
@@ -112,10 +112,9 @@ Completely translated into **German** and **English** (97 strings). Further lang
 
 |Component | Version|
 |---|---|
-| Magento 2 Open Source | 2.4.6 to 2.4.8-p1 |
+| Magento 2 Open Source | 2.4.6 to 2.4.8-p4 |
 | PHP | 7.4 or higher |
 
-Are you using a different Magento version? Let us know – we are happy to test it.
 
 ---
 
@@ -217,6 +216,12 @@ The database table `zwernemann_withdrawal` remains and can be removed manually i
 
 ## Version History
 
+### 1.5.0
+- Newly added languages: Bulgarian, Danish, Estonian, Finnish, French, Greek, Irish, Italian, Croatian, Latvian, Lithuanian, Maltese, Dutch, Polish, Portuguese, Romanian, Swedish, Slovak, Slovenian, Spanish, Czech, Hungarian. The module now supports all 24 official languages of the European Union. All translations use the legally correct term for the statutory right of withdrawal in accordance with the EU Consumer Rights Directive (2011/83/EU).
+
+### 1.4.0
+- Deleted the version attribute from composer.json. Composer has great integration with version control systems like Git, Mercurial and Subversion and there is no need to manually track version numbers in a text file for Composer at all. The field only exists for special situations where a version control system is not in use.
+
 ### 1.3.0 
 - Admin can now confirm or reject individual withdrawal requests directly from the grid
 - Context-sensitive action links per row (Confirm / Reject) — only shown when a status change makes sense
@@ -267,7 +272,6 @@ The database table `zwernemann_withdrawal` remains and can be removed manually i
 
 ## Planned
 
-- Check and ensure Hyvä theme compatibility
 - Extend REST API to include write access
 - Individual withdrawal periods per product (via product attributes)
 
