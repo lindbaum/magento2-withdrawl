@@ -249,7 +249,7 @@ Komplett uebersetzt in alle offiziellen 24 Sprachen der EU (je 97 Zeichenketten)
 2. Installieren Sie das Modul:
 
 ```bash
-composer require zwernemann/module-withdrawal:dev-main
+composer require zwernemann/module-withdrawal
 php bin/magento setup:upgrade
 php bin/magento setup:di:compile
 php bin/magento setup:static-content:deploy de_DE en_US

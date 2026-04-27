@@ -98,7 +98,7 @@ class Find implements HttpPostActionInterface
                 __('An email with an access link has been sent to %1. Please check your inbox.', $email)
             );
         } catch (\Exception $e) {
-            $this->logger->error('Failed to send guest withdrawal access email', [
+            $this->logger->error('Failed to send withdrawal access email', [
                 'order_id' => $order->getId(),
                 'email' => $email,
                 'error' => $e->getMessage()
