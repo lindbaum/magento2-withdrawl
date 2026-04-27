@@ -234,8 +234,22 @@ Komplett uebersetzt in alle offiziellen 24 Sprachen der EU (je 97 Zeichenketten)
 
 ### Per Composer
 
+1. Fügen Sie das Repository zu Ihrer `composer.json` hinzu:
+
+```json
+"repositories": {
+    "zwernemann": {
+        "type": "vcs",
+        "url": "https://github.com/lindbaum/magento2-withdrawl",
+        "only": ["zwernemann/module-withdrawal"]
+    }
+}
+```
+
+2. Installieren Sie das Modul:
+
 ```bash
-composer require zwernemann/module-withdrawal
+composer require zwernemann/module-withdrawal:dev-main
 php bin/magento setup:upgrade
 php bin/magento setup:di:compile
 php bin/magento setup:static-content:deploy de_DE en_US
