@@ -160,3 +160,7 @@
 "Important:","Wichtig:"
 "This link is unique to your withdrawal request and can be used to access the withdrawal form.","Dieser Link ist einzigartig für Ihre Widerrufsanfrage und kann verwendet werden, um auf das Widerrufsformular zuzugreifen."
 "If you did not request this withdrawal, please ignore this email.","Falls Sie diesen Widerruf nicht angefordert haben, ignorieren Sie bitte diese E-Mail."
+"You are about to withdraw {count} item(s) from this order.","Sie sind dabei, {count} Artikel aus dieser Bestellung zu widerrufen."
+"Previous: %1 items | Now: %2 items (+%3 newly withdrawn)","Vorher: %1 Artikel | Jetzt: %2 Artikel (+%3 neu widerrufen)"
+"Newly Withdrawn Items:","Neu widerrufene Artikel:"
+"Some items cannot be withdrawn due to their properties. Select the items you wish to withdraw.","Einige Artikel können aufgrund ihrer Eigenschaften nicht widerrufen werden. Wählen Sie die Artikel aus, die Sie widerrufen möchten."
