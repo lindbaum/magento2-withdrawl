@@ -37,8 +37,8 @@ if ($order && $block->hasWithdrawal((int)$order->getEntityId())) {
                 </span>
                 <br>
                 <span style="font-size: 11px; color: #666; margin-top: 4px; display: inline-block;">
-                    <?php if ($withdrawal->getData('withdrawal_type') === 'partial'): ?>
-                        <?= $escaper->escapeHtml(__('%1 of %2 items', $withdrawal->getData('withdrawn_item_count'), count($order->getAllVisibleItems()))) ?>
+                    <?php if ($withdrawal->getData('is_partial') == 1): ?>
+                        <?= $escaper->escapeHtml(__('Partial withdrawal')) ?>
                     <?php else: ?>
                         <?= $escaper->escapeHtml(__('Full withdrawal')) ?>
                     <?php endif; ?>

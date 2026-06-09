@@ -3,12 +3,13 @@ declare(strict_types=1);
 
 namespace Zwernemann\Withdrawal\Model;
 
+use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Sales\Api\OrderRepositoryInterface;
 use Zwernemann\Withdrawal\Api\WithdrawalRepositoryInterface;
 use Zwernemann\Withdrawal\Model\ResourceModel\Withdrawal as WithdrawalResource;
 use Zwernemann\Withdrawal\Model\ResourceModel\Withdrawal\CollectionFactory;
 use Zwernemann\Withdrawal\Model\WithdrawalFactory;
-use Magento\Sales\Api\OrderRepositoryInterface;
 
 class WithdrawalRepository implements WithdrawalRepositoryInterface
 {
@@ -17,22 +18,33 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface
     protected $collectionFactory;
     protected $orderRepository;
     protected $configHelper;
+    protected $resourceConnection;
 
     public function __construct(
-        WithdrawalResource $resource,
-        WithdrawalFactory $withdrawalFactory,
-        CollectionFactory $collectionFactory,
-        OrderRepositoryInterface $orderRepository
-    ) {
+        WithdrawalResource       $resource,
+        WithdrawalFactory        $withdrawalFactory,
+        CollectionFactory        $collectionFactory,
+        OrderRepositoryInterface $orderRepository,
+        ResourceConnection       $resourceConnection
+    )
+    {
         $this->resource = $resource;
         $this->withdrawalFactory = $withdrawalFactory;
         $this->collectionFactory = $collectionFactory;
         $this->orderRepository = $orderRepository;
+        $this->resourceConnection = $resourceConnection;
     }
 
     public function setConfigHelper($configHelper)
     {
         $this->configHelper = $configHelper;
+    }
+
+    public function getList()
+    {
+        $collection = $this->collectionFactory->create();
+        $collection->setOrder('created_at', 'DESC');
+        return $collection->getData();
     }
 
     public function create($orderId, $comment = null)
@@ -44,30 +56,13 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface
         return $withdrawal;
     }
 
-    public function getList()
+    /**
+     * Get all withdrawals by order ID (returns array with one or zero elements for single-entry approach)
+     */
+    public function getAllWithdrawalsByOrderId(int $orderId): array
     {
-        $collection = $this->collectionFactory->create();
-        $collection->setOrder('created_at', 'DESC');
-
-        $result = [];
-        foreach ($collection as $item) {
-            $data = $item->getData();
-
-            // Decode withdrawn_items JSON
-            if (!empty($data['withdrawn_items'])) {
-                try {
-                    $data['withdrawn_items'] = json_decode($data['withdrawn_items'], true);
-                } catch (\Exception $e) {
-                    $data['withdrawn_items'] = [];
-                }
-            } else {
-                $data['withdrawn_items'] = [];
-            }
-
-            $result[] = $data;
-        }
-
-        return $result;
+        $withdrawal = $this->getByOrderId($orderId);
+        return $withdrawal ? [$withdrawal] : [];
     }
 
     public function getByOrderId(int $orderId): ?Withdrawal
@@ -84,36 +79,42 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface
     }
 
     /**
-     * Get all withdrawals by order ID (returns array with one or zero elements for single-entry approach)
+     * Save items for a withdrawal request.
+     *
+     * @param int $withdrawalId
+     * @param array $items Each entry: ['order_item_id' => int, 'name' => string, 'sku' => string, 'qty' => float]
      */
-    public function getAllWithdrawalsByOrderId(int $orderId): array
+    public function saveWithdrawalItems(int $withdrawalId, array $items): void
     {
-        $withdrawal = $this->getByOrderId($orderId);
-        return $withdrawal ? [$withdrawal] : [];
+        $connection = $this->resourceConnection->getConnection();
+        $tableName = $this->resourceConnection->getTableName('zwernemann_withdrawal_items');
+
+        foreach ($items as $item) {
+            $connection->insert($tableName, [
+                'withdrawal_id' => $withdrawalId,
+                'order_item_id' => (int)$item['order_item_id'],
+                'order_item_name' => $item['name'] ?? null,
+                'order_item_sku' => $item['sku'] ?? null,
+                'qty_withdrawn' => (float)($item['qty'] ?? 1),
+            ]);
+        }
     }
 
     /**
-     * Get all withdrawn item IDs for an order
+     * Returns items stored for a given withdrawal record.
+     *
+     * @return array
      */
-    public function getWithdrawnItemIds(int $orderId): array
+    public function getItemsByWithdrawalId(int $withdrawalId): array
     {
-        $withdrawal = $this->getByOrderId($orderId);
+        $connection = $this->resourceConnection->getConnection();
+        $tableName = $this->resourceConnection->getTableName('zwernemann_withdrawal_items');
 
-        if (!$withdrawal) {
-            return [];
-        }
+        $select = $connection->select()
+            ->from($tableName)
+            ->where('withdrawal_id = ?', $withdrawalId);
 
-        $withdrawnItems = $withdrawal->getData('withdrawn_items');
-        if (empty($withdrawnItems)) {
-            return [];
-        }
-
-        try {
-            $itemIds = json_decode($withdrawnItems, true);
-            return is_array($itemIds) ? array_unique(array_filter($itemIds)) : [];
-        } catch (\Exception $e) {
-            return [];
-        }
+        return $connection->fetchAll($select);
     }
 
     public function hasWithdrawal(int $orderId): bool
@@ -148,6 +149,41 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface
         return true;
     }
 
+    /**
+     * Get all withdrawn item IDs for an order (alias for getWithdrawnOrderItemIds)
+     */
+    public function getWithdrawnItemIds(int $orderId): array
+    {
+        return $this->getWithdrawnOrderItemIds($orderId);
+    }
+
+    /**
+     * Returns all order_item_ids that have already been included in any withdrawal for this order.
+     *
+     * @return int[]
+     */
+    public function getWithdrawnOrderItemIds(int $orderId): array
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $withdrawalTable = $this->resourceConnection->getTableName('zwernemann_withdrawal');
+        $itemsTable = $this->resourceConnection->getTableName('zwernemann_withdrawal_items');
+
+        $select = $connection->select()
+            ->from(['wi' => $itemsTable], ['wi.order_item_id'])
+            ->join(['w' => $withdrawalTable], 'w.entity_id = wi.withdrawal_id', [])
+            ->where('w.order_id = ?', $orderId);
+
+        $result = $connection->fetchCol($select);
+        return array_map('intval', $result);
+    }
+
+    public function updateStatus(int $entityId, string $status): void
+    {
+        $withdrawal = $this->getById($entityId);
+        $withdrawal->setData('status', $status);
+        $this->resource->save($withdrawal);
+    }
+
     public function getById(int $entityId): Withdrawal
     {
         $withdrawal = $this->withdrawalFactory->create();
@@ -156,13 +192,6 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface
             throw new NoSuchEntityException(__('Withdrawal with ID "%1" does not exist.', $entityId));
         }
         return $withdrawal;
-    }
-
-    public function updateStatus(int $entityId, string $status): void
-    {
-        $withdrawal = $this->getById($entityId);
-        $withdrawal->setData('status', $status);
-        $this->resource->save($withdrawal);
     }
 }
 

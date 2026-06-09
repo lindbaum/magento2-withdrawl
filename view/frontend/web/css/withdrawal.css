@@ -63,6 +63,45 @@
 
 .withdrawal-info-box {
     border: 1px solid #e0e0e0;
+    margin-top: 30px;
+    padding: 20px;
+    background: #f5f5f5;
+    border-radius: 4px;
+}
+
+.withdrawal-partial-notice {
+    margin-top: 20px;
+}
+
+.withdrawal-deadline {
+    margin-bottom: 15px;
+}
+
+.box.box-order-items {
+    margin-bottom: 20px;
+}
+
+.box.box-order-items .box-title {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.withdrawal-item-withdrawn {
+    opacity: 0.5;
+}
+
+.withdrawal-status-badge {
+    font-size: 11px;
+    color: #666;
+    font-style: italic;
+}
+
+.withdrawal-qty-input {
+    width: 60px;
+}
+
+.col-withdrawal-select {
+    width: 40px;
 }
 
 .withdrawal-view-container .action.primary.withdraw {

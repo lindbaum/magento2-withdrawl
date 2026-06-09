@@ -173,29 +173,41 @@ class Submit implements HttpPostActionInterface
             $existingWithdrawal = $this->withdrawalRepository->getByOrderId($orderId);
             $connection = $this->resource->getConnection();
 
+            // Prepare items data for saving
+            $itemsData = [];
+            foreach ($selectedWithdrawableItems as $item) {
+                $itemsData[] = [
+                    'order_item_id' => (int) $item->getId(),
+                    'name' => $item->getName(),
+                    'sku' => $item->getSku(),
+                    'qty' => (float) $item->getQtyOrdered()
+                ];
+            }
+
             if ($existingWithdrawal) {
-                // UPDATE existing withdrawal
-                $existingItemIds = json_decode($existingWithdrawal->getData('withdrawn_items'), true) ?: [];
+                // UPDATE existing withdrawal - add new items
+                $existingItemIds = $this->withdrawalRepository->getWithdrawnOrderItemIds($orderId);
                 $mergedItemIds = array_unique(array_merge($existingItemIds, $withdrawableItemIds));
 
                 // Determine if this completes the withdrawal
                 // Type is 'full' when ALL withdrawable items are withdrawn (non-withdrawable items don't matter)
                 $remainingItems = $this->config->getWithdrawableItems($order, $mergedItemIds);
-                $withdrawalType = empty($remainingItems) ? 'full' : 'partial';
+                $isPartial = !empty($remainingItems);
 
                 $connection->update(
                     'zwernemann_withdrawal',
                     [
-                        'withdrawn_items' => json_encode($mergedItemIds),
-                        'withdrawn_item_count' => count($mergedItemIds),
-                        'withdrawal_type' => $withdrawalType,
-                        'updated_at' => $this->dateTime->gmtDate()
+                        'is_partial' => $isPartial ? 1 : 0
                     ],
                     ['entity_id = ?' => $existingWithdrawal->getId()]
                 );
 
+                // Save new items
+                $this->withdrawalRepository->saveWithdrawalItems((int) $existingWithdrawal->getId(), $itemsData);
+
                 $isUpdate = true;
                 $previousItemCount = count($existingItemIds);
+                $withdrawalType = $isPartial ? 'partial' : 'full';
             } else {
                 // CREATE new withdrawal
                 // Get all withdrawable items (excluding non-withdrawable) to determine if this is a full withdrawal
@@ -205,7 +217,8 @@ class Submit implements HttpPostActionInterface
 
                 // Type is 'full' when we're withdrawing ALL withdrawable items
                 // (non-withdrawable items don't count towards partial/full determination)
-                $withdrawalType = (count($withdrawableItemIds) === count($allWithdrawableItemIds)) ? 'full' : 'partial';
+                $isPartial = (count($withdrawableItemIds) !== count($allWithdrawableItemIds));
+                $withdrawalType = $isPartial ? 'partial' : 'full';
 
                 $connection->insert('zwernemann_withdrawal', [
                     'order_id' => $order->getEntityId(),
@@ -215,10 +228,13 @@ class Submit implements HttpPostActionInterface
                     'status' => 'pending',
                     'order_created_at' => $order->getCreatedAt(),
                     'created_at' => $this->dateTime->gmtDate(),
-                    'withdrawn_items' => json_encode($withdrawableItemIds),
-                    'withdrawal_type' => $withdrawalType,
-                    'withdrawn_item_count' => count($withdrawableItemIds)
+                    'is_partial' => $isPartial ? 1 : 0
                 ]);
+
+                $withdrawalId = (int) $connection->lastInsertId();
+
+                // Save items
+                $this->withdrawalRepository->saveWithdrawalItems($withdrawalId, $itemsData);
 
                 $isUpdate = false;
                 $previousItemCount = 0;
