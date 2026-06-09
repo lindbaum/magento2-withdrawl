@@ -100,7 +100,7 @@ class WithdrawalButton extends Template
             // Check if partial withdrawal exists
             $hasPartial = false;
             foreach ($withdrawals as $withdrawal) {
-                if ($withdrawal->getData('withdrawal_type') === 'partial') {
+                if ($withdrawal->getData('is_partial') == 1) {
                     $hasPartial = true;
                     break;
                 }

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Page Types Configuration for Withdrawal Module
+ *
+ * Defines custom page types that can be used in:
+ * - Admin Layout Updates (Content > Design > Configuration)
+ * - Widget configuration (Content > Widgets)
+ * - CMS Page Layout Updates
+ */
+-->
+<page_types xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_types.xsd">
+
+    <!-- Withdrawal Form for logged-in customers -->
+    <type id="withdrawal_index_view" label="Withdrawal Form (Customers)"/>
+
+    <!-- Withdrawal Success Page -->
+    <type id="withdrawal_index_success" label="Withdrawal Success Page"/>
+
+    <!-- Guest Search Page for entering order details -->
+    <type id="withdrawal_guest_search" label="Withdrawal Guest Search"/>
+
+    <!-- Withdrawal Form for guest customers -->
+    <type id="withdrawal_guest_view" label="Withdrawal Form (Guest)"/>
+
+</page_types>

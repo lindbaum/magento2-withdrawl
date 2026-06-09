@@ -6,54 +6,16 @@ define([
     'use strict';
 
     return function (config, element) {
-        const $form = $(element);
-        const $selectAll = $('#select-all-items');
-        const $checkboxes = $('.withdrawal-item-checkbox');
-        const $selectedCount = $('#selected-count');
-
-        // Update count display
-        function updateCount() {
-            const checkedCount = $checkboxes.filter(':checked').length;
-            const totalCount = $checkboxes.length;
-            $selectedCount.text('(' + checkedCount + ' ' + $.mage.__('of') + ' ' + totalCount + ' ' + $.mage.__('selected') + ')');
-        }
-
-        // Select all functionality
-        $selectAll.on('change', function () {
-            $checkboxes.prop('checked', this.checked);
-            updateCount();
-        });
-
-        // Update select-all state when individual checkboxes change
-        $checkboxes.on('change', function () {
-            const allChecked = $checkboxes.length === $checkboxes.filter(':checked').length;
-            $selectAll.prop('checked', allChecked);
-            updateCount();
-        });
-
-        // Initial count
-        updateCount();
-
-        // Form submission with validation
-        $form.on('submit', function (e) {
+        $(element).on('submit', function (e) {
             e.preventDefault();
-            const self = this;
-            const checkedCount = $checkboxes.filter(':checked').length;
-
-            if (checkedCount === 0) {
-                alert($.mage.__('Please select at least one item to withdraw.'));
-                return false;
-            }
-
-            const message = $.mage.__('You are about to withdraw %1 item(s) from this order.').replace('%1', checkedCount) +
-                          ' ' + $.mage.__('This action cannot be undone.');
+            var form = this;
 
             confirm({
                 title: $.mage.__('Confirm Withdrawal'),
-                content: message,
+                content: $.mage.__('Are you sure you want to submit the withdrawal for this order? This action cannot be undone.'),
                 actions: {
                     confirm: function () {
-                        self.submit();
+                        form.submit();
                     },
                     cancel: function () {
                         return false;

@@ -40,14 +40,17 @@ class StatusUpdater
                 return false;
             }
 
-            // Get withdrawn item IDs
-            $withdrawnItemsJson = $withdrawal->getData('withdrawn_items');
-            if (empty($withdrawnItemsJson)) {
+            // Get withdrawn items from items table
+            $withdrawnItemsData = $this->withdrawalRepository->getItemsByWithdrawalId((int) $withdrawal->getId());
+            if (empty($withdrawnItemsData)) {
                 return false;
             }
 
-            $withdrawnItemIds = json_decode($withdrawnItemsJson, true);
-            if (!is_array($withdrawnItemIds) || empty($withdrawnItemIds)) {
+            $withdrawnItemIds = array_map(function($item) {
+                return (int) $item['order_item_id'];
+            }, $withdrawnItemsData);
+
+            if (empty($withdrawnItemIds)) {
                 return false;
             }
 
