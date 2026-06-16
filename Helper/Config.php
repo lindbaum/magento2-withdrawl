@@ -178,10 +178,27 @@ class Config extends AbstractHelper
         // Get all visible items
         $orderItems = $order->getAllVisibleItems();
 
+        // Get withdrawn quantities for quantity-based filtering
+        $withdrawnQtys = [];
+        if ($this->withdrawalRepository) {
+            $withdrawnQtys = $this->withdrawalRepository->getWithdrawnQuantitiesByOrderId((int)$order->getEntityId());
+        }
+
         if (empty($excludedAttributes)) {
-            // No exclusions, just filter by excluded IDs
+            // No exclusions, just filter by excluded IDs and remaining quantity
             foreach ($orderItems as $item) {
-                if (!in_array($item->getId(), $excludedItemIds)) {
+                $itemId = (int)$item->getId();
+
+                // Skip if explicitly excluded
+                if (in_array($itemId, $excludedItemIds)) {
+                    continue;
+                }
+
+                // Check if item has remaining quantity
+                $orderedQty = (float)$item->getQtyOrdered();
+                $withdrawnQty = $withdrawnQtys[$itemId] ?? 0;
+
+                if ($withdrawnQty < $orderedQty) {
                     $withdrawableItems[] = $item;
                 }
             }
@@ -210,8 +227,19 @@ class Config extends AbstractHelper
 
         // Filter items
         foreach ($orderItems as $item) {
-            if (in_array($item->getId(), $excludedItemIds)) {
+            $itemId = (int)$item->getId();
+
+            // Skip if explicitly excluded
+            if (in_array($itemId, $excludedItemIds)) {
                 continue;
+            }
+
+            // Check if item has remaining quantity
+            $orderedQty = (float)$item->getQtyOrdered();
+            $withdrawnQty = $withdrawnQtys[$itemId] ?? 0;
+
+            if ($withdrawnQty >= $orderedQty) {
+                continue; // Already fully withdrawn
             }
 
             if ($this->isItemWithdrawable($item)) {
@@ -242,6 +270,12 @@ class Config extends AbstractHelper
         return $nonWithdrawableItems;
     }
 
+    /**
+     * Get item IDs that have been partially or fully withdrawn.
+     *
+     * @param int $orderId
+     * @return int[]
+     */
     public function getAlreadyWithdrawnItemIds(int $orderId): array
     {
         if (!$this->withdrawalRepository) {
@@ -249,6 +283,21 @@ class Config extends AbstractHelper
         }
 
         return $this->withdrawalRepository->getWithdrawnItemIds($orderId);
+    }
+
+    /**
+     * Get withdrawn quantities for all items in an order.
+     *
+     * @param int $orderId
+     * @return array [order_item_id => qty_withdrawn]
+     */
+    public function getWithdrawnQuantities(int $orderId): array
+    {
+        if (!$this->withdrawalRepository) {
+            return [];
+        }
+
+        return $this->withdrawalRepository->getWithdrawnQuantitiesByOrderId($orderId);
     }
 
     private function getLatestShipmentDate(\Magento\Sales\Api\Data\OrderInterface $order): ?\DateTime
@@ -283,8 +332,7 @@ class Config extends AbstractHelper
 
         if ($shipmentDate === null) {
             // Not yet shipped: check if there are withdrawable items
-            $alreadyWithdrawn = $this->getAlreadyWithdrawnItemIds((int)$order->getEntityId());
-            $withdrawable = $this->getWithdrawableItems($order, $alreadyWithdrawn);
+            $withdrawable = $this->getWithdrawableItems($order, []);
             return count($withdrawable) > 0;
         }
 
@@ -297,8 +345,7 @@ class Config extends AbstractHelper
         }
 
         // Check if there are still withdrawable items
-        $alreadyWithdrawn = $this->getAlreadyWithdrawnItemIds((int)$order->getEntityId());
-        $withdrawable = $this->getWithdrawableItems($order, $alreadyWithdrawn);
+        $withdrawable = $this->getWithdrawableItems($order, []);
         return count($withdrawable) > 0;
     }
 

@@ -112,9 +112,10 @@ class Submit implements HttpPostActionInterface
                 return $redirect->setPath('sales/order/history');
             }
 
-            // Get withdrawable items (excluding already withdrawn)
-            $alreadyWithdrawn = $this->config->getAlreadyWithdrawnItemIds($orderId);
-            $withdrawableItems = $this->config->getWithdrawableItems($order, $alreadyWithdrawn);
+            // Get withdrawable items
+            // NOTE: We don't pass excludedItemIds anymore because getWithdrawableItems()
+            // now checks remaining quantities internally
+            $withdrawableItems = $this->config->getWithdrawableItems($order, []);
 
             if (empty($withdrawableItems)) {
                 $this->messageManager->addErrorMessage(
@@ -132,6 +133,12 @@ class Submit implements HttpPostActionInterface
                 $selectedItemIds = [];
             }
             $selectedItemIds = array_map('intval', $selectedItemIds);
+
+            // Get requested quantities from request
+            $requestedQuantities = $this->request->getParam('withdrawal_qty', []);
+            if (!is_array($requestedQuantities)) {
+                $requestedQuantities = [];
+            }
 
             // Validate that selected items are actually withdrawable
             $withdrawableItemIds = array_map(function ($item) {
@@ -151,10 +158,51 @@ class Submit implements HttpPostActionInterface
                 return $redirect->setPath('withdrawal/index/view', ['order_id' => $orderId]);
             }
 
+            // Get withdrawn quantities to calculate available quantities
+            $withdrawnQuantities = $this->config->getWithdrawnQuantities($orderId);
+
             // Filter withdrawableItems to only include selected items
             $selectedWithdrawableItems = array_filter($withdrawableItems, function ($item) use ($withdrawableItemIds) {
                 return in_array((int)$item->getId(), $withdrawableItemIds, true);
             });
+
+            // Validate requested quantities and prepare items data
+            $itemsData = [];
+            foreach ($selectedWithdrawableItems as $item) {
+                $itemId = (int)$item->getId();
+                $orderedQty = (float)$item->getQtyOrdered();
+                $withdrawnQty = $withdrawnQuantities[$itemId] ?? 0;
+                $availableQty = $orderedQty - $withdrawnQty;
+
+                // Get requested quantity from form
+                $requestedQty = isset($requestedQuantities[$itemId]) ? (float)$requestedQuantities[$itemId] : $availableQty;
+
+                // Validate quantity
+                if ($requestedQty <= 0) {
+                    $this->messageManager->addErrorMessage(
+                        __('Invalid quantity for item "%1". Quantity must be greater than 0.', $item->getName())
+                    );
+                    return $redirect->setPath('withdrawal/index/view', ['order_id' => $orderId]);
+                }
+
+                if ($requestedQty > $availableQty) {
+                    $this->messageManager->addErrorMessage(
+                        __('Requested quantity for item "%1" exceeds available quantity. Available: %2, Requested: %3',
+                            $item->getName(),
+                            $availableQty,
+                            $requestedQty
+                        )
+                    );
+                    return $redirect->setPath('withdrawal/index/view', ['order_id' => $orderId]);
+                }
+
+                $itemsData[] = [
+                    'order_item_id' => $itemId,
+                    'name' => $item->getName(),
+                    'sku' => $item->getSku(),
+                    'qty' => $requestedQty
+                ];
+            }
 
             // Get non-withdrawable items for email
             $nonWithdrawableItems = $this->config->getNonWithdrawableItems($order);
@@ -173,26 +221,18 @@ class Submit implements HttpPostActionInterface
             $existingWithdrawal = $this->withdrawalRepository->getByOrderId($orderId);
             $connection = $this->resource->getConnection();
 
-            // Prepare items data for saving
-            $itemsData = [];
-            foreach ($selectedWithdrawableItems as $item) {
-                $itemsData[] = [
-                    'order_item_id' => (int) $item->getId(),
-                    'name' => $item->getName(),
-                    'sku' => $item->getSku(),
-                    'qty' => (float) $item->getQtyOrdered()
-                ];
-            }
-
             if ($existingWithdrawal) {
                 // UPDATE existing withdrawal - add new items
                 $existingItemIds = $this->withdrawalRepository->getWithdrawnOrderItemIds($orderId);
                 $mergedItemIds = array_unique(array_merge($existingItemIds, $withdrawableItemIds));
 
-                // Determine if this completes the withdrawal
-                // Type is 'full' when ALL withdrawable items are withdrawn (non-withdrawable items don't matter)
-                $remainingItems = $this->config->getWithdrawableItems($order, $mergedItemIds);
-                $isPartial = !empty($remainingItems);
+                // Save new items first to update withdrawn quantities
+                $this->withdrawalRepository->saveWithdrawalItems((int) $existingWithdrawal->getId(), $itemsData);
+
+                // Determine if this completes the withdrawal based on quantities
+                // Get updated withdrawn quantities after saving new items
+                $updatedWithdrawnQtys = $this->config->getWithdrawnQuantities($orderId);
+                $isPartial = $this->isPartialWithdrawal($order, $updatedWithdrawnQtys);
 
                 $connection->update(
                     'zwernemann_withdrawal',
@@ -202,22 +242,20 @@ class Submit implements HttpPostActionInterface
                     ['entity_id = ?' => $existingWithdrawal->getId()]
                 );
 
-                // Save new items
-                $this->withdrawalRepository->saveWithdrawalItems((int) $existingWithdrawal->getId(), $itemsData);
-
                 $isUpdate = true;
                 $previousItemCount = count($existingItemIds);
                 $withdrawalType = $isPartial ? 'partial' : 'full';
             } else {
                 // CREATE new withdrawal
-                // Get all withdrawable items (excluding non-withdrawable) to determine if this is a full withdrawal
-                $allWithdrawableItemIds = array_map(function ($item) {
-                    return (int)$item->getId();
-                }, $this->config->getWithdrawableItems($order, []));
+                // Calculate what withdrawn quantities will be after this submission
+                $projectedWithdrawnQtys = [];
+                foreach ($itemsData as $itemData) {
+                    $itemId = (int)$itemData['order_item_id'];
+                    $projectedWithdrawnQtys[$itemId] = ($withdrawnQuantities[$itemId] ?? 0) + (float)$itemData['qty'];
+                }
 
-                // Type is 'full' when we're withdrawing ALL withdrawable items
-                // (non-withdrawable items don't count towards partial/full determination)
-                $isPartial = (count($withdrawableItemIds) !== count($allWithdrawableItemIds));
+                // Determine if this is a full withdrawal based on quantities
+                $isPartial = $this->isPartialWithdrawal($order, $projectedWithdrawnQtys);
                 $withdrawalType = $isPartial ? 'partial' : 'full';
 
                 $connection->insert('zwernemann_withdrawal', [
@@ -271,6 +309,12 @@ class Submit implements HttpPostActionInterface
             $order->addCommentToStatusHistory($commentText);
             $this->orderRepository->save($order);
 
+            // Build withdrawn quantities map for email (item_id => qty)
+            $itemWithdrawnQuantities = [];
+            foreach ($itemsData as $itemData) {
+                $itemWithdrawnQuantities[(int)$itemData['order_item_id']] = (float)$itemData['qty'];
+            }
+
             // Send emails
             $templateVars = [
                 'order_increment_id' => $order->getIncrementId(),
@@ -294,14 +338,16 @@ class Submit implements HttpPostActionInterface
                 $selectedWithdrawableItems,
                 $nonWithdrawableItems,
                 $withdrawalType,
-                $isUpdate
+                $isUpdate,
+                $itemWithdrawnQuantities
             );
             $this->emailSender->sendAdminEmail(
                 $templateVars,
                 $selectedWithdrawableItems,
                 $nonWithdrawableItems,
                 $withdrawalType,
-                $isUpdate
+                $isUpdate,
+                $itemWithdrawnQuantities
             );
 
             // Redirect to success page
@@ -316,6 +362,47 @@ class Submit implements HttpPostActionInterface
             return $redirect->setPath('withdrawal/guest/search');
         }
         return $redirect->setPath('sales/order/history');
+    }
+
+    /**
+     * Determine if a withdrawal is partial based on quantities.
+     *
+     * A withdrawal is considered "full" (is_partial = 0) only when ALL withdrawable items
+     * will have their ENTIRE ordered quantity withdrawn.
+     *
+     * A withdrawal is considered "partial" (is_partial = 1) if any withdrawable item
+     * still has remaining quantity that hasn't been withdrawn.
+     *
+     * @param \Magento\Sales\Api\Data\OrderInterface $order
+     * @param array $withdrawnQuantities Array of [order_item_id => total_qty_withdrawn]
+     * @return bool True if partial (has remaining qty), false if full (all qty withdrawn)
+     */
+    protected function isPartialWithdrawal(\Magento\Sales\Api\Data\OrderInterface $order, array $withdrawnQuantities): bool
+    {
+        // Get all withdrawable items (excluding non-withdrawable items by attribute)
+        $withdrawableItems = $this->config->getWithdrawableItems($order, []);
+
+        if (empty($withdrawableItems)) {
+            // No withdrawable items means nothing can be withdrawn (edge case)
+            return false;
+        }
+
+        // Check if all withdrawable items are fully withdrawn
+        foreach ($withdrawableItems as $item) {
+            $itemId = (int)$item->getId();
+            $orderedQty = (float)$item->getQtyOrdered();
+            $withdrawnQty = $withdrawnQuantities[$itemId] ?? 0;
+
+            // Use epsilon comparison for floating-point safety (precision: 4 decimals as per db_schema.xml)
+            $remainingQty = $orderedQty - $withdrawnQty;
+            if ($remainingQty > 0.0001) {
+                // This item still has quantity remaining to withdraw
+                return true; // It's a partial withdrawal
+            }
+        }
+
+        // All withdrawable items are fully withdrawn
+        return false; // It's a full withdrawal
     }
 }
 

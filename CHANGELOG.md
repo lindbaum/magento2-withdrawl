@@ -6,6 +6,23 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Se
 
 ---
 
+## [1.6.0] - 2026-06-16
+
+### Fixed
+- **Duplicate Withdrawal Items Bug:** Fixed issue where submitting multiple partial withdrawals of the same item created duplicate entries in `zwernemann_withdrawal_items` table
+  - `WithdrawalRepository::saveWithdrawalItems()` now checks for existing entries per `withdrawal_id` and `order_item_id`
+  - If entry exists: increments `qty_withdrawn` instead of inserting duplicate row
+  - If entry doesn't exist: inserts new row as before
+  - Example: Two partial withdrawals of item SKU `0196080` (qty=1 each) now correctly result in one row with `qty_withdrawn=2.0000` instead of two separate rows
+- Email notifications continue to display newly withdrawn quantities correctly (not accumulated totals)
+
+### Technical
+- Modified `Zwernemann\Withdrawal\Model\WithdrawalRepository::saveWithdrawalItems()` to use `SELECT` query before `INSERT`
+- Uses `UPDATE SET qty_withdrawn = qty_withdrawn + ?` for existing entries to accumulate quantities
+- Preserves `order_item_name` and `order_item_sku` from original entry on updates
+
+---
+
 ## [1.3.0] - 2026-04-24
 
 ### Added
