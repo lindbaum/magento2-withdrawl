@@ -35,7 +35,8 @@ class Sender
         array $withdrawnItems = [],
         array $nonWithdrawnItems = [],
         string $withdrawalType = 'full',
-        bool $isUpdate = false
+        bool $isUpdate = false,
+        array $itemWithdrawnQuantities = []
     ): void {
         try {
             $storeId = $this->storeManager->getStore()->getId();
@@ -51,7 +52,7 @@ class Sender
             $adminEmail = $this->getAdminEmail((int) $storeId);
 
             // Add item lists to template vars
-            $withdrawnItemsHtml = $this->buildItemListHtml($withdrawnItems);
+            $withdrawnItemsHtml = $this->buildItemListHtml($withdrawnItems, $itemWithdrawnQuantities);
             $nonWithdrawnItemsHtml = $this->buildItemListHtml($nonWithdrawnItems);
 
             $templateVars['withdrawn_items_html'] = $withdrawnItemsHtml;
@@ -88,7 +89,8 @@ class Sender
         array $withdrawnItems = [],
         array $nonWithdrawnItems = [],
         string $withdrawalType = 'full',
-        bool $isUpdate = false
+        bool $isUpdate = false,
+        array $itemWithdrawnQuantities = []
     ): void {
         try {
             $storeId = $this->storeManager->getStore()->getId();
@@ -107,7 +109,7 @@ class Sender
             }
 
             // Add item lists to template vars
-            $withdrawnItemsHtml = $this->buildItemListHtml($withdrawnItems);
+            $withdrawnItemsHtml = $this->buildItemListHtml($withdrawnItems, $itemWithdrawnQuantities);
             $nonWithdrawnItemsHtml = $this->buildItemListHtml($nonWithdrawnItems);
 
             $templateVars['withdrawn_items_html'] = $withdrawnItemsHtml;
@@ -135,7 +137,15 @@ class Sender
         }
     }
 
-    protected function buildItemListHtml(array $items): string
+    /**
+     * Build HTML table for item list.
+     * If withdrawn quantities are provided, display them instead of ordered quantities.
+     *
+     * @param array $items
+     * @param array $withdrawnQuantities Map of item_id => qty_withdrawn for this withdrawal
+     * @return string
+     */
+    protected function buildItemListHtml(array $items, array $withdrawnQuantities = []): string
     {
         if (empty($items)) {
             return '';
@@ -150,10 +160,24 @@ class Sender
         $html .= '<tbody>';
 
         foreach ($items as $item) {
+            $itemId = (int)$item->getId();
+            $orderedQty = (int)$item->getQtyOrdered();
+
+            // Use withdrawn quantity if provided, otherwise use ordered quantity
+            $displayQty = isset($withdrawnQuantities[$itemId])
+                ? (int)$withdrawnQuantities[$itemId]
+                : $orderedQty;
+
+            // Show "X of Y" format if withdrawn qty is less than ordered qty
+            $qtyDisplay = $displayQty;
+            if (isset($withdrawnQuantities[$itemId]) && $withdrawnQuantities[$itemId] < $orderedQty) {
+                $qtyDisplay = __('%1 of %2', $displayQty, $orderedQty);
+            }
+
             $html .= '<tr>';
             $html .= '<td style="border: 1px solid #ddd; padding: 8px;">'. htmlspecialchars($item->getName()) .'</td>';
             $html .= '<td style="border: 1px solid #ddd; padding: 8px;">'. htmlspecialchars($item->getSku()) .'</td>';
-            $html .= '<td style="border: 1px solid #ddd; padding: 8px; text-align: center;">'. (int)$item->getQtyOrdered() .'</td>';
+            $html .= '<td style="border: 1px solid #ddd; padding: 8px; text-align: center;">'. $qtyDisplay .'</td>';
             $html .= '</tr>';
         }
 

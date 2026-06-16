@@ -1,0 +1,170 @@
+<?php
+/**
+ * @var \Zwernemann\Withdrawal\Block\Adminhtml\Withdrawal\View $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+
+$withdrawal = $block->getWithdrawal();
+$order = $block->getOrder();
+$items = $block->getWithdrawalItems();
+
+if (!$withdrawal): ?>
+    <div class="message message-error error">
+        <?= $escaper->escapeHtml(__('Withdrawal not found.')) ?>
+    </div>
+    <?php return;
+endif;
+?>
+<div class="page-actions" data-ui-id="page-actions-toolbar-content-header" style="min-height: 50px;">
+    <div class="page-actions-inner">
+        <div class="page-actions-buttons">
+            <button type="button" class="action-default scalable back"
+                    onclick="setLocation('<?= $escaper->escapeUrl($block->getBackUrl()) ?>')"
+                    title="<?= $escaper->escapeHtmlAttr(__('Back')) ?>">
+                <span><?= $escaper->escapeHtml(__('Back')) ?></span>
+            </button>
+            <?php if ($block->getOrderViewUrl()): ?>
+                <button type="button" class="action-default scalable view-order"
+                        onclick="window.open('<?= $escaper->escapeUrl($block->getOrderViewUrl()) ?>', '_blank')"
+                        title="<?= $escaper->escapeHtmlAttr(__('View Order')) ?>">
+                    <span><?= $escaper->escapeHtml(__('View Order')) ?></span>
+                </button>
+            <?php endif; ?>
+
+            <?php if ($block->canConfirm()): ?>
+                <button type="button" class="action-default scalable confirm primary"
+                        onclick="confirmSetLocation('<?= $escaper->escapeJs(__('Are you sure you want to confirm this withdrawal request?')) ?>', '<?= $escaper->escapeUrl($block->getConfirmUrl()) ?>')"
+                        title="<?= $escaper->escapeHtmlAttr(__('Confirm Withdrawal')) ?>">
+                    <span><?= $escaper->escapeHtml(__('Confirm Withdrawal')) ?></span>
+                </button>
+            <?php endif; ?>
+            <?php if ($block->canReject()): ?>
+                <button type="button" class="action-default scalable reject"
+                        onclick="confirmSetLocation('<?= $escaper->escapeJs(__('Are you sure you want to reject this withdrawal request?')) ?>', '<?= $escaper->escapeUrl($block->getRejectUrl()) ?>')"
+                        title="<?= $escaper->escapeHtmlAttr(__('Reject Withdrawal')) ?>">
+                    <span><?= $escaper->escapeHtml(__('Reject Withdrawal')) ?></span>
+                </button>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<div class="admin__page-section">
+    <div class="admin__page-section-title">
+        <span class="title"><?= $escaper->escapeHtml(__('Withdrawal Information')) ?></span>
+    </div>
+    <div class="admin__page-section-content">
+        <div class="admin__page-section-item order-information">
+            <table class="admin__table-secondary order-information-table">
+                <tr>
+                    <th><?= $escaper->escapeHtml(__('Withdrawal ID')) ?></th>
+                    <td><?= $escaper->escapeHtml($withdrawal->getId()) ?></td>
+                </tr>
+                <tr>
+                    <th><?= $escaper->escapeHtml(__('Status')) ?></th>
+                    <td>
+                        <span class="withdrawal-status withdrawal-status-<?= $escaper->escapeHtmlAttr($withdrawal->getData('status')) ?>">
+                            <?= $escaper->escapeHtml($block->getStatusLabel($withdrawal->getData('status'))) ?>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <th><?= $escaper->escapeHtml(__('Withdrawal Type')) ?></th>
+                    <td><?= $escaper->escapeHtml($block->getWithdrawalTypeLabel()) ?></td>
+                </tr>
+                <tr>
+                    <th><?= $escaper->escapeHtml(__('Created At')) ?></th>
+                    <td><?= $escaper->escapeHtml($block->formatDate($withdrawal->getData('created_at'), \IntlDateFormatter::MEDIUM, true)) ?></td>
+                </tr>
+                <?php if ($withdrawal->getData('comment')): ?>
+                    <tr>
+                        <th><?= $escaper->escapeHtml(__('Comment')) ?></th>
+                        <td><?= $escaper->escapeHtml($withdrawal->getData('comment')) ?></td>
+                    </tr>
+                <?php endif; ?>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="admin__page-section">
+    <div class="admin__page-section-title">
+        <span class="title"><?= $escaper->escapeHtml(__('Order & Customer Information')) ?></span>
+    </div>
+    <div class="admin__page-section-content">
+        <div class="admin__page-section-item order-information">
+            <table class="admin__table-secondary order-information-table">
+                <tr>
+                    <th><?= $escaper->escapeHtml(__('Order #')) ?></th>
+                    <td>
+                        <?php if ($block->getOrderViewUrl()): ?>
+                            <a href="<?= $escaper->escapeUrl($block->getOrderViewUrl()) ?>" target="_blank">
+                                <?= $escaper->escapeHtml($withdrawal->getData('order_increment_id')) ?>
+                            </a>
+                        <?php else: ?>
+                            <?= $escaper->escapeHtml($withdrawal->getData('order_increment_id')) ?>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php if ($order): ?>
+                    <tr>
+                        <th><?= $escaper->escapeHtml(__('Order Placed At')) ?></th>
+                        <td><?= $escaper->escapeHtml($block->formatDate($order->getCreatedAt(), \IntlDateFormatter::MEDIUM, true)) ?></td>
+                    </tr>
+                <?php endif; ?>
+                <tr>
+                    <th><?= $escaper->escapeHtml(__('Customer Name')) ?></th>
+                    <td><?= $escaper->escapeHtml($withdrawal->getData('customer_name')) ?></td>
+                </tr>
+                <tr>
+                    <th><?= $escaper->escapeHtml(__('Customer Email')) ?></th>
+                    <td>
+                        <a href="mailto:<?= $escaper->escapeHtmlAttr($withdrawal->getData('customer_email')) ?>">
+                            <?= $escaper->escapeHtml($withdrawal->getData('customer_email')) ?>
+                        </a>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="admin__page-section">
+    <div class="admin__page-section-title">
+        <span class="title"><?= $escaper->escapeHtml(__('Withdrawn Items')) ?></span>
+    </div>
+    <div class="admin__page-section-content">
+        <?php if (empty($items)): ?>
+            <div class="message message-notice notice">
+                <?= $escaper->escapeHtml(__('No items found for this withdrawal.')) ?>
+            </div>
+        <?php else: ?>
+            <div class="admin__table-wrapper">
+                <table class="data-table admin__table-secondary">
+                    <thead>
+                    <tr>
+                        <th><?= $escaper->escapeHtml(__('Product Name')) ?></th>
+                        <th><?= $escaper->escapeHtml(__('SKU')) ?></th>
+                        <th class="col-qty"><?= $escaper->escapeHtml(__('Qty Withdrawn')) ?></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($items as $item): ?>
+                        <tr>
+                            <td><?= $escaper->escapeHtml($item['order_item_name'] ?? '-') ?></td>
+                            <td><?= $escaper->escapeHtml($item['order_item_sku'] ?? '-') ?></td>
+                            <td class="col-qty">
+                                <?php
+                                $qty = (float)($item['qty_withdrawn'] ?? 0);
+                                echo $escaper->escapeHtml(number_format($qty, 2));
+                                ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+

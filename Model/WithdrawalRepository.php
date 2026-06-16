@@ -72,7 +72,7 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface
         $collection->setPageSize(1);
 
         $item = $collection->getFirstItem();
-        if ($item && $item->getId()) {
+        if ($item instanceof Withdrawal && $item->getId()) {
             return $item;
         }
         return null;
@@ -80,6 +80,7 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface
 
     /**
      * Save items for a withdrawal request.
+     * If an item already exists for this withdrawal, increment qty_withdrawn instead of inserting a duplicate.
      *
      * @param int $withdrawalId
      * @param array $items Each entry: ['order_item_id' => int, 'name' => string, 'sku' => string, 'qty' => float]
@@ -90,13 +91,34 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface
         $tableName = $this->resourceConnection->getTableName('zwernemann_withdrawal_items');
 
         foreach ($items as $item) {
-            $connection->insert($tableName, [
-                'withdrawal_id' => $withdrawalId,
-                'order_item_id' => (int)$item['order_item_id'],
-                'order_item_name' => $item['name'] ?? null,
-                'order_item_sku' => $item['sku'] ?? null,
-                'qty_withdrawn' => (float)($item['qty'] ?? 1),
-            ]);
+            $orderItemId = (int)$item['order_item_id'];
+            $qtyToAdd = (float)($item['qty'] ?? 1);
+
+            // Check if this item already exists for this withdrawal
+            $select = $connection->select()
+                ->from($tableName, ['entity_id', 'qty_withdrawn'])
+                ->where('withdrawal_id = ?', $withdrawalId)
+                ->where('order_item_id = ?', $orderItemId);
+
+            $existingItem = $connection->fetchRow($select);
+
+            if ($existingItem) {
+                // Update existing entry by incrementing qty_withdrawn
+                $connection->update(
+                    $tableName,
+                    ['qty_withdrawn' => new \Zend_Db_Expr('qty_withdrawn + ' . $qtyToAdd)],
+                    ['entity_id = ?' => $existingItem['entity_id']]
+                );
+            } else {
+                // Insert new entry
+                $connection->insert($tableName, [
+                    'withdrawal_id' => $withdrawalId,
+                    'order_item_id' => $orderItemId,
+                    'order_item_name' => $item['name'] ?? null,
+                    'order_item_sku' => $item['sku'] ?? null,
+                    'qty_withdrawn' => $qtyToAdd,
+                ]);
+            }
         }
     }
 
@@ -125,28 +147,67 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface
             return false;
         }
 
-        // Check if all withdrawable items have been withdrawn
+        // Check if all withdrawable items have been FULLY withdrawn (based on quantities)
         if ($this->configHelper) {
             try {
                 $order = $this->orderRepository->get($orderId);
-                $withdrawnItemIds = $this->getWithdrawnItemIds($orderId);
 
-                // Get withdrawable items EXCLUDING already withdrawn ones
-                $withdrawableItems = $this->configHelper->getWithdrawableItems($order, $withdrawnItemIds);
+                // Get all withdrawable items (no exclusions - we want ALL withdrawable items)
+                $withdrawableItems = $this->configHelper->getWithdrawableItems($order, []);
 
-                // If there are still withdrawable items left, return false
-                if (!empty($withdrawableItems)) {
-                    return false; // Still items available to withdraw
+                if (empty($withdrawableItems)) {
+                    return true; // No withdrawable items means nothing left to withdraw
                 }
 
-                return true; // All withdrawable items withdrawn
+                // Get withdrawn quantities
+                $withdrawnQuantities = $this->getWithdrawnQuantitiesByOrderId($orderId);
+
+                // Check if all withdrawable items are FULLY withdrawn (100% of quantity)
+                foreach ($withdrawableItems as $item) {
+                    $itemId = (int)$item->getId();
+                    $orderedQty = (float)$item->getQtyOrdered();
+                    $withdrawnQty = $withdrawnQuantities[$itemId] ?? 0;
+
+                    // If any item still has remaining quantity, return false
+                    if (($orderedQty - $withdrawnQty) > 0.0001) {
+                        return false; // Still quantity available to withdraw
+                    }
+                }
+
+                return true; // All withdrawable items fully withdrawn
             } catch (\Exception $e) {
-                // Fallback to old logic
-                return true;
+                // Fallback: check is_partial flag
+                return $withdrawal->getData('is_partial') == 0;
             }
         }
 
         return true;
+    }
+
+    /**
+     * Get withdrawn quantities by order ID.
+     * Returns array mapping order_item_id to total withdrawn quantity.
+     *
+     * @param int $orderId
+     * @return array [order_item_id => total_qty_withdrawn]
+     */
+    public function getWithdrawnQuantitiesByOrderId(int $orderId): array
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $withdrawalTable = $this->resourceConnection->getTableName('zwernemann_withdrawal');
+        $itemsTable = $this->resourceConnection->getTableName('zwernemann_withdrawal_items');
+
+        $select = $connection->select()
+            ->from(['wi' => $itemsTable], [
+                'order_item_id' => 'wi.order_item_id',
+                'total_qty' => new \Zend_Db_Expr('SUM(wi.qty_withdrawn)')
+            ])
+            ->join(['w' => $withdrawalTable], 'w.entity_id = wi.withdrawal_id', [])
+            ->where('w.order_id = ?', $orderId)
+            ->group('wi.order_item_id');
+
+        $result = $connection->fetchPairs($select);
+        return array_map('floatval', $result);
     }
 
     /**
@@ -158,7 +219,9 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface
     }
 
     /**
-     * Returns all order_item_ids that have already been included in any withdrawal for this order.
+     * Returns all order_item_ids that have been included in any withdrawal for this order.
+     * Note: This returns items that have ANY quantity withdrawn (partial or full).
+     * Use getFullyWithdrawnItemIds() to get only items with no remaining quantity.
      *
      * @return int[]
      */
@@ -171,10 +234,37 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface
         $select = $connection->select()
             ->from(['wi' => $itemsTable], ['wi.order_item_id'])
             ->join(['w' => $withdrawalTable], 'w.entity_id = wi.withdrawal_id', [])
-            ->where('w.order_id = ?', $orderId);
+            ->where('w.order_id = ?', $orderId)
+            ->group('wi.order_item_id');
 
         $result = $connection->fetchCol($select);
         return array_map('intval', $result);
+    }
+
+    /**
+     * Get fully withdrawn item IDs (where withdrawn qty >= ordered qty).
+     * Requires order to determine ordered quantities.
+     *
+     * @param int $orderId
+     * @param \Magento\Sales\Api\Data\OrderInterface $order
+     * @return int[]
+     */
+    public function getFullyWithdrawnItemIds(int $orderId, \Magento\Sales\Api\Data\OrderInterface $order): array
+    {
+        $withdrawnQtys = $this->getWithdrawnQuantitiesByOrderId($orderId);
+        $fullyWithdrawn = [];
+
+        foreach ($order->getAllVisibleItems() as $item) {
+            $itemId = (int)$item->getId();
+            $orderedQty = (float)$item->getQtyOrdered();
+            $withdrawnQty = $withdrawnQtys[$itemId] ?? 0;
+
+            if ($withdrawnQty >= $orderedQty) {
+                $fullyWithdrawn[] = $itemId;
+            }
+        }
+
+        return $fullyWithdrawn;
     }
 
     public function updateStatus(int $entityId, string $status): void

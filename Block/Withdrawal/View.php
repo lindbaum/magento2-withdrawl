@@ -24,6 +24,7 @@ class View extends Template
     protected $withdrawableItems = null;
     protected $nonWithdrawableItems = null;
     protected $alreadyWithdrawnItems = null;
+    protected $withdrawnQuantities = null;
 
     public function __construct(
         Context                  $context,
@@ -113,6 +114,83 @@ class View extends Template
         }
     }
 
+    /**
+     * Get withdrawn quantities for the current order.
+     *
+     * @return array [order_item_id => qty_withdrawn]
+     */
+    protected function getWithdrawnQuantities(): array
+    {
+        if ($this->withdrawnQuantities === null) {
+            $order = $this->getOrder();
+            if (!$order) {
+                $this->withdrawnQuantities = [];
+                return $this->withdrawnQuantities;
+            }
+
+            $this->withdrawnQuantities = $this->config->getWithdrawnQuantities((int)$order->getEntityId());
+        }
+
+        return $this->withdrawnQuantities;
+    }
+
+    /**
+     * Get available quantity for withdrawal for a specific item.
+     * Returns ordered qty minus already withdrawn qty.
+     *
+     * @param \Magento\Sales\Api\Data\OrderItemInterface $item
+     * @return float
+     */
+    public function getAvailableQuantityForItem($item): float
+    {
+        $orderedQty = (float)$item->getQtyOrdered();
+        $withdrawnQtys = $this->getWithdrawnQuantities();
+        $withdrawnQty = $withdrawnQtys[(int)$item->getId()] ?? 0;
+
+        return max(0, $orderedQty - $withdrawnQty);
+    }
+
+    /**
+     * Get withdrawn quantity for a specific item.
+     *
+     * @param \Magento\Sales\Api\Data\OrderItemInterface $item
+     * @return float
+     */
+    public function getWithdrawnQuantityForItem($item): float
+    {
+        $withdrawnQtys = $this->getWithdrawnQuantities();
+        return $withdrawnQtys[(int)$item->getId()] ?? 0;
+    }
+
+    /**
+     * Check if item has been partially withdrawn (some qty withdrawn but not all).
+     *
+     * @param \Magento\Sales\Api\Data\OrderItemInterface $item
+     * @return bool
+     */
+    public function hasPartiallyWithdrawnItem($item): bool
+    {
+        $withdrawnQty = $this->getWithdrawnQuantityForItem($item);
+        $orderedQty = (float)$item->getQtyOrdered();
+
+        return $withdrawnQty > 0 && $withdrawnQty < $orderedQty;
+    }
+
+    /**
+     * Check if item has been fully withdrawn.
+     *
+     * @param \Magento\Sales\Api\Data\OrderItemInterface $item
+     * @return bool
+     */
+    public function isItemFullyWithdrawn($item): bool
+    {
+        $withdrawnQty = $this->getWithdrawnQuantityForItem($item);
+        $orderedQty = (float)$item->getQtyOrdered();
+
+        return $withdrawnQty >= $orderedQty;
+    }
+
+
     public function hasNonWithdrawableItems(): bool
     {
         return count($this->getNonWithdrawableItems()) > 0;
@@ -152,7 +230,8 @@ class View extends Template
 
             if (!empty($withdrawnItemIds)) {
                 foreach ($order->getAllVisibleItems() as $item) {
-                    if (in_array($item->getId(), $withdrawnItemIds)) {
+                    // Only include items that are FULLY withdrawn
+                    if (in_array($item->getId(), $withdrawnItemIds) && $this->isItemFullyWithdrawn($item)) {
                         $this->alreadyWithdrawnItems[] = $item;
                     }
                 }
@@ -186,8 +265,8 @@ class View extends Template
                 return $this->withdrawableItems;
             }
 
-            $alreadyWithdrawn = $this->config->getAlreadyWithdrawnItemIds((int)$order->getEntityId());
-            $this->withdrawableItems = $this->config->getWithdrawableItems($order, $alreadyWithdrawn);
+            // Don't pass excludedItemIds - getWithdrawableItems() checks quantities internally
+            $this->withdrawableItems = $this->config->getWithdrawableItems($order, []);
         }
 
         return $this->withdrawableItems;

@@ -53,10 +53,22 @@ Under *Sales > Withdrawals*, you will find a tabular overview of all received wi
 
 - ID, order number, customer name, email
 - Status (Pending / Confirmed / Rejected)
+- Withdrawal type (Full / Partial)
 - Date of order and date of withdrawal
 - Direct link to the respective order view
 
 All columns can be filtered and sorted.
+
+**Withdrawal detail view**
+
+Via the **"View"** link in the actions column, you can access the detail view of a withdrawal. There you will see:
+
+- All withdrawal information (ID, status, type, creation date, comment)
+- Order details with linked order number (leads directly to order view)
+- Customer data (name, email)
+- **Table of all withdrawn items** with product name, SKU, and withdrawn quantity
+
+This view gives you a complete overview of which products were withdrawn and in what quantities. A back button takes you back to the withdrawal list.
 
 **Automatic email notification**
 
@@ -291,18 +303,30 @@ The database table `zwernemann_withdrawal` remains and can be removed manually i
 
 ## About This Release
 
-**v1.3.0** - April 24, 2026
+**v1.7.0** - June 16, 2026
 
-This release includes a comprehensive **code review and documentation update**:
+This release adds a **detail view for withdrawals** in the admin area:
 
-- ✅ Full technical code review (Rating: 8.5/10)
-- ✅ Production readiness assessment
-- ✅ Implementation guide with API reference
-- ✅ Complete changelog with version history
-- ✅ Customization guide with 5 real-world examples
-- ✅ Troubleshooting section
+- ✅ New "View" action in admin grid
+- ✅ Detail page with complete withdrawal information
+- ✅ Table of all withdrawn items with product name, SKU, and quantity
+- ✅ Linked order number for direct order view navigation
+- ✅ Back button to withdrawal list
+
+---
 
 ## Version History
+
+### 1.7.0
+- New admin detail view for withdrawals with complete item overview
+- Added "View" action in admin grid
+- Linked order number for direct navigation to order view
+- Clear display of all withdrawn items with quantities
+- Back button for easy navigation
+
+### 1.6.0
+- Fixed duplicate withdrawal items bug: Multiple partial withdrawals of the same item now correctly update `qty_withdrawn` in a single row instead of creating duplicate entries
+- Improved database efficiency for partial withdrawal scenarios
 
 ### 1.5.0
 - Newly added languages: Bulgarian, Danish, Estonian, Finnish, French, Greek, Irish, Italian, Croatian, Latvian, Lithuanian, Maltese, Dutch, Polish, Portuguese, Romanian, Swedish, Slovak, Slovenian, Spanish, Czech, Hungarian. The module now supports all 24 official languages of the European Union. All translations use the legally correct term for the statutory right of withdrawal in accordance with the EU Consumer Rights Directive (2011/83/EU).

@@ -29,6 +29,13 @@ class Actions extends Column
             foreach ($dataSource['data']['items'] as &$item) {
                 if (isset($item['entity_id'])) {
                     $actions = [
+                        'view' => [
+                            'href' => $this->urlBuilder->getUrl(
+                                'withdrawal/index/view',
+                                ['id' => $item['entity_id']]
+                            ),
+                            'label' => __('View'),
+                        ],
                         'view_order' => [
                             'href' => $this->urlBuilder->getUrl(
                                 'sales/order/view',

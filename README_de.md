@@ -54,10 +54,22 @@ Unter *Verkäufe > Withdrawals* finden Sie eine tabellarische Uebersicht saemtli
 
 - ID, Bestellnummer, Kundenname, E-Mail
 - Status (Ausstehend / Bestaetigt / Abgelehnt)
+- Widerrufstyp (Vollstaendig / Teilweise)
 - Datum der Bestellung und Datum des Widerrufs
 - Direktlink zur jeweiligen Bestellansicht
 
 Alle Spalten sind filterbar und sortierbar.
+
+**Detailansicht der widerrufenen Artikel**
+
+Ueber den **"View"**-Link in der Actions-Spalte gelangen Sie zur Detailansicht eines Widerrufs. Dort sehen Sie:
+
+- Alle Widerrufsinformationen (ID, Status, Typ, Erstellungsdatum, Kommentar)
+- Bestelldetails mit verlinkter Bestellnummer (fuehrt direkt zur Order-View)
+- Kundendaten (Name, E-Mail)
+- **Tabelle aller widerrufenen Artikel** mit Produktname, SKU und widerrufener Menge
+
+Diese Ansicht gibt Ihnen einen vollstaendigen Ueberblick darueber, welche Produkte in welcher Menge widerrufen wurden. Ein Zurueck-Button fuehrt Sie zur Widerrufsliste zurueck.
 
 **Automatische Benachrichtigung per E-Mail**
 
@@ -301,31 +313,38 @@ Die Datenbanktabelle `zwernemann_withdrawal` bleibt erhalten und kann bei Bedarf
 
 ---
 
+## Über diese Version
+
+**v1.7.0** - 16. Juni 2026
+
+Diese Version fügt eine **Detailansicht für Widerrufe** im Admin-Bereich hinzu:
+
+- ✅ Neue "View"-Aktion im Admin-Grid
+- ✅ Detailseite mit vollständigen Widerrufsinformationen
+- ✅ Tabelle aller widerrufenen Artikel mit Produktname, SKU und Menge
+- ✅ Verlinkte Bestellnummer zur direkten Order-Ansicht
+- ✅ Zurück-Button zur Widerrufsliste
+
+---
+
 ## Versionshistorie
+
+### 1.7.0
+- Neue Admin-Detailansicht für Widerrufe mit vollständiger Artikel-Übersicht
+- "View"-Aktion im Admin-Grid hinzugefügt
+- Verlinkte Bestellnummer zur direkten Navigation zur Order-View
+- Übersichtliche Darstellung aller widerrufenen Artikel mit Mengen
+- Zurück-Button zur einfachen Navigation
+
+### 1.6.0
+- Fehler bei doppelten Widerrufs-Artikeln behoben: Mehrfache Teilwiderrufe desselben Artikels aktualisieren nun korrekt `qty_withdrawn` in einer einzelnen Zeile, anstatt doppelte Einträge zu erstellen
+- Verbesserte Datenbankeffizienz für Teilwiderrufs-Szenarien
 
 ### 1.5.0
 - Neu hinzugefügte Sprachen: Bulgarisch, Dänisch, Estnisch, Finnisch, Französisch, Griechisch, Irisch, Italienisch, Kroatisch, Lettisch, Litauisch, Maltesisch, Niederländisch, Polnisch, Portugiesisch, Rumänisch, Schwedisch, Slowakisch, Slowenisch, Spanisch, Tschechisch, Ungarisch. Das Modul unterstützt jetzt alle 24 offiziellen Amtssprachen der Europäischen Union. Alle Übersetzungen verwenden den juristisch korrekten Begriff für das gesetzliche Widerrufsrecht gemäß EU-Verbraucherrechterichtlinie (2011/83/EU).
 
 ### 1.4.0
-
 - Deleted the version attribute from composer.json. Composer has great integration with version control systems Git and there is no need to manually track version numbers in a text file for Composer at all. The field only exists for special situations where a version control system is not in use.
-
-### 1.3.0
-
-## Über diese Version
-
-**v1.3.0** - 24. April 2026
-
-Diese Version enthält eine umfassende **Code Review und Dokumentationsaktualisierung**:
-
-- ✅ Vollständige technische Code Review (Bewertung: 8.5/10)
-- ✅ Produktionsreife-Bewertung
-- ✅ Implementierungsleitfaden mit API-Referenz
-- ✅ Vollständiges Changelog mit Versionshistorie
-- ✅ Anpassungsleitfaden mit 5 praktischen Beispielen
-- ✅ Troubleshooting-Sektion
-
-## Versionshistorie
 
 ### 1.3.0
 - Admin kann Widerrufe nun direkt aus dem Grid bestätigen oder ablehnen
