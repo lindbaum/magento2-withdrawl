@@ -139,11 +139,24 @@ class Config extends AbstractHelper
         }
 
         try {
-            $product = $this->productRepository->getById($item->getProductId());
+            // For configurable products, check the simple product attributes
+            $productToCheck = null;
+            if ($item->getProductType() === \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE) {
+                $childItems = $item->getChildrenItems();
+                if (!empty($childItems)) {
+                    $childItem = reset($childItems); // Get first child item
+                    $productToCheck = $this->productRepository->getById($childItem->getProductId());
+                }
+            }
+
+            // Fall back to the main product if no child found
+            if (!$productToCheck) {
+                $productToCheck = $this->productRepository->getById($item->getProductId());
+            }
 
             foreach ($excludedAttributes as $attributeCode) {
                 try {
-                    $attributeValue = $product->getData($attributeCode);
+                    $attributeValue = $productToCheck->getData($attributeCode);
 
                     // Check if attribute is set to true/1/Yes
                     if ($attributeValue === true || $attributeValue === 1 || $attributeValue === '1' || strtolower((string)$attributeValue) === 'yes') {
@@ -206,9 +219,20 @@ class Config extends AbstractHelper
         }
 
         // Build product IDs array for collection
+        // For configurable products, we need to include the simple product IDs
         $productIds = [];
         foreach ($orderItems as $item) {
             $productIds[] = $item->getProductId();
+
+            // Add simple product IDs for configurable products
+            if ($item->getProductType() === \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE) {
+                $childItems = $item->getChildrenItems();
+                if (!empty($childItems)) {
+                    foreach ($childItems as $childItem) {
+                        $productIds[] = $childItem->getProductId();
+                    }
+                }
+            }
         }
 
         if (empty($productIds)) {
@@ -217,7 +241,7 @@ class Config extends AbstractHelper
 
         // Load product collection with attributes for performance
         $productCollection = $this->productCollectionFactory->create();
-        $productCollection->addIdFilter($productIds);
+        $productCollection->addIdFilter(array_unique($productIds));
         $productCollection->addAttributeToSelect($excludedAttributes);
 
         $products = [];
