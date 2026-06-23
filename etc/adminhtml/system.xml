@@ -61,6 +61,24 @@
                     <source_model>Magento\Config\Model\Config\Source\Email\Template</source_model>
                     <comment>Email template sent to the shop owner after withdrawal request.</comment>
                 </field>
+                <field id="customer_update_template" translate="label comment" type="select" sortOrder="40"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Customer Update Email Template</label>
+                    <source_model>Magento\Config\Model\Config\Source\Email\Template</source_model>
+                    <comment>Email template sent to the customer when withdrawal status is updated.</comment>
+                </field>
+                <field id="admin_update_template" translate="label comment" type="select" sortOrder="50"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Admin Update Email Template</label>
+                    <source_model>Magento\Config\Model\Config\Source\Email\Template</source_model>
+                    <comment>Email template sent to the shop owner when withdrawal status is updated.</comment>
+                </field>
+                <field id="guest_access_link_template" translate="label comment" type="select" sortOrder="60"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Guest Access Link Email Template</label>
+                    <source_model>Magento\Config\Model\Config\Source\Email\Template</source_model>
+                    <comment>Email template sent to guests with access link for withdrawal management.</comment>
+                </field>
             </group>
         </section>
     </system>
