@@ -141,7 +141,7 @@ class Config extends AbstractHelper
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
-        return $value ?: 'zwernemann_withdrawal_guest_access_link';
+        return $value ?: 'zwernemann_withdrawal_email_guest_access_link_template';
     }
 
     /**
