@@ -5,23 +5,28 @@ namespace Zwernemann\Withdrawal\Service;
 
 use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Translate\Inline\StateInterface;
-use Magento\Store\Model\StoreManagerInterface;
 use Magento\Sales\Api\Data\OrderInterface;
+use Magento\Store\Model\StoreManagerInterface;
+use Zwernemann\Withdrawal\Helper\Config;
 
 class EmailSender
 {
     protected TransportBuilder $transportBuilder;
     protected StateInterface $inlineTranslation;
     protected StoreManagerInterface $storeManager;
+    protected Config $config;
 
     public function __construct(
-        TransportBuilder $transportBuilder,
-        StateInterface $inlineTranslation,
-        StoreManagerInterface $storeManager
-    ) {
+        TransportBuilder      $transportBuilder,
+        StateInterface        $inlineTranslation,
+        StoreManagerInterface $storeManager,
+        Config                $config
+    )
+    {
         $this->transportBuilder = $transportBuilder;
         $this->inlineTranslation = $inlineTranslation;
         $this->storeManager = $storeManager;
+        $this->config = $config;
     }
 
     /**
@@ -40,9 +45,10 @@ class EmailSender
         try {
             $store = $this->storeManager->getStore($order->getStoreId());
             $tokenUrl = $store->getUrl('withdrawal/guest/verify', ['token' => $token]);
+            $templateId = $this->config->getGuestAccessLinkEmailTemplate((int)$store->getId());
 
             $transport = $this->transportBuilder
-                ->setTemplateIdentifier('zwernemann_withdrawal_guest_access_link')
+                ->setTemplateIdentifier($templateId)
                 ->setTemplateOptions([
                     'area' => \Magento\Framework\App\Area::AREA_FRONTEND,
                     'store' => $store->getId(),
@@ -61,4 +67,3 @@ class EmailSender
         }
     }
 }
-

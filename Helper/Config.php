@@ -17,6 +17,9 @@ class Config extends AbstractHelper
     const XML_PATH_WITHDRAWAL_PERIOD = 'zwernemann_withdrawal/general/withdrawal_period';
     const XML_PATH_EMAIL_TEMPLATE_CUSTOMER = 'zwernemann_withdrawal/email/customer_template';
     const XML_PATH_EMAIL_TEMPLATE_ADMIN = 'zwernemann_withdrawal/email/admin_template';
+    const XML_PATH_EMAIL_TEMPLATE_CUSTOMER_UPDATE = 'zwernemann_withdrawal/email/customer_update_template';
+    const XML_PATH_EMAIL_TEMPLATE_ADMIN_UPDATE = 'zwernemann_withdrawal/email/admin_update_template';
+    const XML_PATH_EMAIL_TEMPLATE_GUEST_ACCESS = 'zwernemann_withdrawal/email/guest_access_link_template';
     const XML_PATH_EMAIL_SENDER = 'zwernemann_withdrawal/email/sender';
     const XML_PATH_ALLOWED_ORDER_STATUSES = 'zwernemann_withdrawal/general/allowed_order_statuses';
     const XML_PATH_EXCLUDED_ATTRIBUTES = 'zwernemann_withdrawal/general/excluded_product_attributes';
@@ -27,6 +30,13 @@ class Config extends AbstractHelper
     private LoggerInterface $logger;
     private $withdrawalRepository;
 
+    /**
+     * @param \Magento\Framework\App\Helper\Context $context
+     * @param ShipmentCollectionFactory $shipmentCollectionFactory
+     * @param ProductRepositoryInterface $productRepository
+     * @param ProductCollectionFactory $productCollectionFactory
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         \Magento\Framework\App\Helper\Context $context,
         ShipmentCollectionFactory             $shipmentCollectionFactory,
@@ -42,11 +52,19 @@ class Config extends AbstractHelper
         $this->logger = $logger;
     }
 
+    /**
+     * @param $withdrawalRepository
+     * @return void
+     */
     public function setWithdrawalRepository($withdrawalRepository)
     {
         $this->withdrawalRepository = $withdrawalRepository;
     }
 
+    /**
+     * @param $storeId
+     * @return string
+     */
     public function getNotificationEmail($storeId = null): string
     {
         return (string)$this->scopeConfig->getValue(
@@ -56,6 +74,10 @@ class Config extends AbstractHelper
         );
     }
 
+    /**
+     * @param $storeId
+     * @return string
+     */
     public function getCustomerEmailTemplate($storeId = null): string
     {
         $value = $this->scopeConfig->getValue(
@@ -66,6 +88,10 @@ class Config extends AbstractHelper
         return $value ?: 'zwernemann_withdrawal_email_customer_template';
     }
 
+    /**
+     * @param $storeId
+     * @return string
+     */
     public function getAdminEmailTemplate($storeId = null): string
     {
         $value = $this->scopeConfig->getValue(
@@ -76,6 +102,52 @@ class Config extends AbstractHelper
         return $value ?: 'zwernemann_withdrawal_email_admin_template';
     }
 
+    /**
+     * @param $storeId
+     * @return string
+     */
+    public function getCustomerUpdateEmailTemplate($storeId = null): string
+    {
+        $value = $this->scopeConfig->getValue(
+            self::XML_PATH_EMAIL_TEMPLATE_CUSTOMER_UPDATE,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+        return $value ?: 'zwernemann_withdrawal_email_customer_update_template';
+    }
+
+    /**
+     * @param $storeId
+     * @return string
+     */
+    public function getAdminUpdateEmailTemplate($storeId = null): string
+    {
+        $value = $this->scopeConfig->getValue(
+            self::XML_PATH_EMAIL_TEMPLATE_ADMIN_UPDATE,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+        return $value ?: 'zwernemann_withdrawal_email_admin_update_template';
+    }
+
+    /**
+     * @param $storeId
+     * @return string
+     */
+    public function getGuestAccessLinkEmailTemplate($storeId = null): string
+    {
+        $value = $this->scopeConfig->getValue(
+            self::XML_PATH_EMAIL_TEMPLATE_GUEST_ACCESS,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+        return $value ?: 'zwernemann_withdrawal_guest_access_link';
+    }
+
+    /**
+     * @param $storeId
+     * @return string
+     */
     public function getEmailSender($storeId = null): string
     {
         $value = $this->scopeConfig->getValue(
@@ -86,6 +158,10 @@ class Config extends AbstractHelper
         return $value ?: 'general';
     }
 
+    /**
+     * @param \Magento\Sales\Api\Data\OrderInterface $order
+     * @return array
+     */
     public function getNonWithdrawableItems(\Magento\Sales\Api\Data\OrderInterface $order): array
     {
         $excludedAttributes = $this->getExcludedProductAttributes();
@@ -106,6 +182,10 @@ class Config extends AbstractHelper
         return $nonWithdrawableItems;
     }
 
+    /**
+     * @param $storeId
+     * @return array
+     */
     public function getExcludedProductAttributes($storeId = null): array
     {
         $value = $this->scopeConfig->getValue(
@@ -122,6 +202,10 @@ class Config extends AbstractHelper
         return array_map('trim', array_filter($attributes));
     }
 
+    /**
+     * @param \Magento\Sales\Api\Data\OrderItemInterface $item
+     * @return bool
+     */
     public function isItemWithdrawable(\Magento\Sales\Api\Data\OrderItemInterface $item): bool
     {
         $excludedAttributes = $this->getExcludedProductAttributes();
@@ -244,6 +328,12 @@ class Config extends AbstractHelper
         return $this->withdrawalRepository->getWithdrawnQuantitiesByOrderId($orderId);
     }
 
+    /**
+     * Check if withdrawal is allowed for the given order based on configuration, order status, shipment date, and withdrawable items.
+     *
+     * @param \Magento\Sales\Api\Data\OrderInterface $order
+     * @return bool
+     */
     public function isWithdrawalAllowed(\Magento\Sales\Api\Data\OrderInterface $order): bool
     {
         if (!$this->isEnabled()) {
@@ -277,6 +367,10 @@ class Config extends AbstractHelper
         return count($withdrawable) > 0;
     }
 
+    /**
+     * @param $storeId
+     * @return bool
+     */
     public function isEnabled($storeId = null): bool
     {
         return $this->scopeConfig->isSetFlag(
@@ -286,6 +380,10 @@ class Config extends AbstractHelper
         );
     }
 
+    /**
+     * @param $storeId
+     * @return array
+     */
     public function getAllowedOrderStatuses($storeId = null): array
     {
         $value = $this->scopeConfig->getValue(
@@ -296,6 +394,11 @@ class Config extends AbstractHelper
         return $value ? explode(',', $value) : [];
     }
 
+    /**
+     * @param \Magento\Sales\Api\Data\OrderInterface $order
+     * @return \DateTime|null
+     * @throws \Exception
+     */
     private function getLatestShipmentDate(\Magento\Sales\Api\Data\OrderInterface $order): ?\DateTime
     {
         $collection = $this->shipmentCollectionFactory->create();
@@ -312,6 +415,11 @@ class Config extends AbstractHelper
         return null;
     }
 
+    /**
+     * @param \Magento\Sales\Api\Data\OrderInterface $order
+     * @param array $excludedItemIds
+     * @return array
+     */
     public function getWithdrawableItems(\Magento\Sales\Api\Data\OrderInterface $order, array $excludedItemIds = []): array
     {
         $excludedAttributes = $this->getExcludedProductAttributes();
@@ -440,6 +548,10 @@ class Config extends AbstractHelper
         return $withdrawableItems;
     }
 
+    /**
+     * @param $storeId
+     * @return int
+     */
     public function getWithdrawalPeriodDays($storeId = null): int
     {
         $value = $this->scopeConfig->getValue(
@@ -450,6 +562,11 @@ class Config extends AbstractHelper
         return $value ? (int)$value : 14;
     }
 
+    /**
+     * @param \Magento\Sales\Api\Data\OrderInterface $order
+     * @return string
+     * @throws \Exception
+     */
     public function getWithdrawalDeadline(\Magento\Sales\Api\Data\OrderInterface $order): string
     {
         $shipmentDate = $this->getLatestShipmentDate($order);
