@@ -14,8 +14,6 @@
               type="html"
               module="Zwernemann_Withdrawal"
               area="frontend"/>
-
-    <!-- Update templates for Option B -->
     <template id="zwernemann_withdrawal_email_customer_update_template"
               label="Withdrawal Update (Customer)"
               file="withdrawal_customer_update.html"
@@ -28,11 +26,10 @@
               type="html"
               module="Zwernemann_Withdrawal"
               area="frontend"/>
-    <template id="zwernemann_withdrawal_guest_access_link"
+    <template id="zwernemann_withdrawal_email_guest_access_link_template"
               label="Withdrawal Guest Access Link"
               file="guest_access_link.html"
               type="html"
               module="Zwernemann_Withdrawal"
               area="frontend"/>
 </config>
-

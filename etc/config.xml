@@ -14,7 +14,7 @@
                 <admin_template>zwernemann_withdrawal_email_admin_template</admin_template>
                 <customer_update_template>zwernemann_withdrawal_email_customer_update_template</customer_update_template>
                 <admin_update_template>zwernemann_withdrawal_email_admin_update_template</admin_update_template>
-                <guest_access_link_template>zwernemann_withdrawal_guest_access_link</guest_access_link_template>
+                <guest_access_link_template>zwernemann_withdrawal_email_guest_access_link_template</guest_access_link_template>
             </email>
         </zwernemann_withdrawal>
     </default>
