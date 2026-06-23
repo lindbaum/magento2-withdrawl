@@ -134,14 +134,14 @@ class Config extends AbstractHelper
             // For configurable products, check the simple product attributes
             $productToCheck = null;
             $isConfigurable = false;
-            $checkedProductId = $item->getProductId();
+            $checkedProductId = (int)$item->getProductId();
 
             if ($item->getProductType() === \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE) {
                 $isConfigurable = true;
                 $childItems = $item->getChildrenItems();
                 if (!empty($childItems)) {
                     $childItem = reset($childItems); // Get first child item
-                    $checkedProductId = $childItem->getProductId();
+                    $checkedProductId = (int)$childItem->getProductId();
                     $productToCheck = $this->productRepository->getById($checkedProductId);
                 }
             }
@@ -154,8 +154,8 @@ class Config extends AbstractHelper
             return $this->checkProductWithdrawability(
                 $productToCheck,
                 $excludedAttributes,
-                $item->getId(),
-                $item->getProductId(),
+                (int)$item->getId(),
+                (int)$item->getProductId(),
                 $checkedProductId,
                 $isConfigurable
             );
@@ -398,14 +398,14 @@ class Config extends AbstractHelper
             // Determine which product to check for exclusion attributes
             $productToCheck = null;
             $isConfigurable = false;
-            $checkedProductId = $item->getProductId();
+            $checkedProductId = (int)$item->getProductId();
 
             if ($item->getProductType() === \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE) {
                 $isConfigurable = true;
                 $childItems = $item->getChildrenItems();
                 if (!empty($childItems)) {
                     $childItem = reset($childItems);
-                    $checkedProductId = $childItem->getProductId();
+                    $checkedProductId = (int)$childItem->getProductId();
                     $productToCheck = $products[$checkedProductId] ?? null;
                 }
             }
@@ -429,7 +429,7 @@ class Config extends AbstractHelper
                 $productToCheck,
                 $excludedAttributes,
                 $itemId,
-                $item->getProductId(),
+                (int)$item->getProductId(),
                 $checkedProductId,
                 $isConfigurable
             )) {
