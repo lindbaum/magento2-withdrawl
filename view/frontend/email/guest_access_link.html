@@ -1,7 +1,8 @@
 <!--@subject {{trans "Withdrawal Access Link for Order #%order_increment_id" order_increment_id=$order.increment_id}} @-->
 <!--@vars {
 "var order":"Order",
-"var token_url":"string"
+"var token_url":"string",
+"var customer_name":"Customer Name"
 } @-->
 
 {{template config_path="design/email/header_template"}}
@@ -9,7 +10,7 @@
 <table>
     <tr class="email-intro">
         <td>
-            <p class="greeting">{{trans "Hello,"}}</p>
+            <p class="greeting">{{trans "Dear %customer_name," customer_name=$customer_name}}</p>
             <p>
                 {{trans "You requested to withdraw items from your order #%1." order.increment_id}}
             </p>

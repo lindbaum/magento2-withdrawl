@@ -47,6 +47,18 @@ class EmailSender
             $tokenUrl = $store->getUrl('withdrawal/guest/verify', ['token' => $token]);
             $templateId = $this->config->getGuestAccessLinkEmailTemplate((int)$store->getId());
 
+            // Build customer name
+            $customerName = trim($order->getCustomerFirstname() . ' ' . $order->getCustomerLastname());
+            if (!$customerName || $customerName === ' ') {
+                $billingAddress = $order->getBillingAddress();
+                if ($billingAddress) {
+                    $customerName = trim($billingAddress->getFirstname() . ' ' . $billingAddress->getLastname());
+                }
+            }
+            if (!$customerName || $customerName === ' ') {
+                $customerName = $email;
+            }
+
             $transport = $this->transportBuilder
                 ->setTemplateIdentifier($templateId)
                 ->setTemplateOptions([
@@ -56,6 +68,7 @@ class EmailSender
                 ->setTemplateVars([
                     'order' => $order,
                     'token_url' => $tokenUrl,
+                    'customer_name' => $customerName,
                 ])
                 ->setFromByScope('general')
                 ->addTo($email)

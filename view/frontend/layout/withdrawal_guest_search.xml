@@ -6,12 +6,23 @@
         <title>Search Order for Withdrawal</title>
     </head>
     <body>
-        <referenceBlock name="page.main.title" remove="true"/>
+        <move element="page.main.title" destination="content.top" before="-"/>
+        <referenceBlock name="page.main.title">
+            <action method="setPageTitle">
+                <argument translate="true" name="page_title" xsi:type="string">Search Order for Withdrawal</argument>
+            </action>
+        </referenceBlock>
+        <referenceContainer name="content.top" htmlTag="div" htmlClass="content-top">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="withdrawal.guest.description"
+                   template="Zwernemann_Withdrawal::guest/description.phtml"/>
+        </referenceContainer>
         <referenceContainer name="content">
             <block class="Zwernemann\Withdrawal\Block\Guest\Search"
                    name="withdrawal.guest.search"
                    template="Zwernemann_Withdrawal::guest/search.phtml"
                    cacheable="false"/>
         </referenceContainer>
+        <referenceContainer name="content.bottom" htmlTag="div" htmlClass="content-bottom"/>
     </body>
 </page>

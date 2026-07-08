@@ -11,6 +11,7 @@ use Magento\Framework\Controller\Result\RedirectFactory;
 use Magento\Framework\Data\Form\FormKey\Validator as FormKeyValidator;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\Stdlib\DateTime\DateTime;
+use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Zwernemann\Withdrawal\Helper\Config;
 use Zwernemann\Withdrawal\Model\Email\Sender as EmailSender;
@@ -23,6 +24,7 @@ class Submit implements HttpPostActionInterface
     protected $messageManager;
     protected $orderRepository;
     protected $dateTime;
+    protected $timezone;
     protected $customerSession;
     protected $config;
     protected $withdrawalRepository;
@@ -36,6 +38,7 @@ class Submit implements HttpPostActionInterface
         ManagerInterface         $messageManager,
         OrderRepositoryInterface $orderRepository,
         DateTime                 $dateTime,
+        TimezoneInterface        $timezone,
         CustomerSession          $customerSession,
         Config                   $config,
         WithdrawalRepository     $withdrawalRepository,
@@ -49,6 +52,7 @@ class Submit implements HttpPostActionInterface
         $this->messageManager = $messageManager;
         $this->orderRepository = $orderRepository;
         $this->dateTime = $dateTime;
+        $this->timezone = $timezone;
         $this->customerSession = $customerSession;
         $this->config = $config;
         $this->withdrawalRepository = $withdrawalRepository;
@@ -320,8 +324,16 @@ class Submit implements HttpPostActionInterface
                 'order_increment_id' => $order->getIncrementId(),
                 'customer_name' => $customerName,
                 'customer_email' => $order->getCustomerEmail(),
-                'order_date' => $order->getCreatedAt(),
-                'withdrawal_date' => $this->dateTime->gmtDate(),
+                'order_date' => $this->timezone->formatDateTime(
+                    new \DateTime($order->getCreatedAt()),
+                    \IntlDateFormatter::MEDIUM,
+                    \IntlDateFormatter::MEDIUM
+                ),
+                'withdrawal_date' => $this->timezone->formatDateTime(
+                    new \DateTime(),
+                    \IntlDateFormatter::MEDIUM,
+                    \IntlDateFormatter::MEDIUM
+                ),
                 'withdrawal_type' => $withdrawalType,
                 'withdrawn_item_count' => count($mergedItemIds),
                 'newly_withdrawn_item_count' => count($withdrawableItemIds),

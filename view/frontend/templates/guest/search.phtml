@@ -3,13 +3,7 @@
 ?>
 <div class="withdrawal-guest-search-container">
     <div class="block block-withdrawal-search">
-        <div class="block-title">
-            <strong><?= $block->escapeHtml(__('Search Order for Withdrawal')) ?></strong>
-        </div>
         <div class="block-content">
-            <p class="note" style="margin-bottom: 20px;">
-                <?= $block->escapeHtml(__('Please enter your order number and the email address used for the order to find your order.')) ?>
-            </p>
             <form method="post"
                   action="<?= $block->escapeUrl($block->getFormAction()) ?>"
                   id="withdrawal-guest-search-form"
