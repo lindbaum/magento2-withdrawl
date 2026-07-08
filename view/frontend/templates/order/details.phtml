@@ -1,0 +1,65 @@
+<?php
+declare(strict_types=1);
+
+use Magento\Framework\Escaper;
+use Zwernemann\Withdrawal\Block\Withdrawal\View;
+
+/** @var View $block */
+/** @var Escaper $escaper */
+
+$order = $block->getOrder();
+if (!$order) {
+    return;
+}
+?>
+<?php
+$withdrawableItems = $block->getWithdrawableItems();
+$productCount = count($withdrawableItems);
+$totalItems = array_sum(array_map(fn($i) => (int)$i->getQtyOrdered(), $withdrawableItems));
+?>
+<div class="box box-order-details">
+    <div class="block-order-details-info">
+        <h2>
+            <?= $escaper->escapeHtml(__(
+                'Your order contains %1 %2',
+                $totalItems,
+                $totalItems === 1 ? __('item') : __('items')
+            )) ?>
+        </h2>
+    </div>
+    <table class="table table-order-details" id="withdrawal-order-details">
+        <tbody>
+        <tr>
+            <th scope="row"><?= $escaper->escapeHtml(__('Order Number')) ?></th>
+            <td>#<?= $escaper->escapeHtml($order->getIncrementId()) ?></td>
+        </tr>
+        <tr>
+            <th scope="row"><?= $escaper->escapeHtml(__('Order Date')) ?></th>
+            <td><?= $escaper->escapeHtml($block->getFormattedDate($order->getCreatedAt())) ?></td>
+        </tr>
+        <tr>
+            <th scope="row"><?= $escaper->escapeHtml(__('Order Status')) ?></th>
+            <td><?= $escaper->escapeHtml($order->getStatusLabel()) ?></td>
+        </tr>
+        <tr>
+            <th scope="row"><?= $escaper->escapeHtml(__('Order Total')) ?></th>
+            <td><?= /* @noEscape */
+                $order->formatPrice($order->getGrandTotal()) ?></td>
+        </tr>
+        </tbody>
+    </table>
+    <?php if ($productCount): ?>
+        <div class=block-order-details-info-bottom">
+            <p>
+                <?= $escaper->escapeHtml(__(
+                    'Your order contains %1 %2 (%3 %4).',
+                    $productCount,
+                    $productCount === 1 ? __('product') : __('products'),
+                    $totalItems,
+                    $totalItems === 1 ? __('item') : __('items')
+                )) ?>
+            </p>
+            <p> <?= $escaper->escapeHtml(__('Select the items you wish to withdraw from.')) ?></p>
+        </div>
+    <?php endif; ?>
+</div>

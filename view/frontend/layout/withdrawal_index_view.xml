@@ -1,11 +1,19 @@
 <?xml version="1.0"?>
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd"
+      layout="2columns-left">
     <update handle="customer_account"/>
     <head>
         <title>Withdrawal</title>
     </head>
     <body>
+        <move element="page.main.title" destination="content.top" before="-"/>
+        <referenceContainer name="content.top" htmlTag="div" htmlClass="content-top">
+            <block class="Zwernemann\Withdrawal\Block\Withdrawal\View"
+                   name="withdrawal.order.details"
+                   template="Zwernemann_Withdrawal::order/details.phtml"
+                   cacheable="false"/>
+        </referenceContainer>
         <referenceContainer name="content">
             <block class="Zwernemann\Withdrawal\Block\Withdrawal\View"
                    name="withdrawal.view"
@@ -17,5 +25,6 @@
                        cacheable="false"/>
             </block>
         </referenceContainer>
+        <referenceContainer name="content.bottom" htmlTag="div" htmlClass="content-bottom"/>
     </body>
 </page>
