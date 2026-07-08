@@ -19,9 +19,9 @@ $order = $block->getOrder();
                             <span><?= $block->escapeHtml(__('Withdrawn Items')) ?></span>
                         </strong>
                         <?php
-                        $itemsBlock = $block->getChildBlock('withdrawal.view.items')->setData('type', 'withdrawn');
+                        $itemsBlock = $block->getChildBlock('withdrawal.view.items');
                         if ($itemsBlock):
-                            echo $itemsBlock->toHtml();
+                            echo $itemsBlock->setData('type', 'withdrawn')->toHtml();
                         endif;
                         ?>
                     </div>
@@ -127,9 +127,9 @@ $order = $block->getOrder();
                                 <span><?= $block->escapeHtml(__('Already Withdrawn Items')) ?></span>
                             </strong>
                             <?php
-                            $itemsBlock = $block->getChildBlock('withdrawal.view.items')->setData('type', 'withdrawn');
+                            $itemsBlock = $block->getChildBlock('withdrawal.view.items');
                             if ($itemsBlock):
-                                echo $itemsBlock->toHtml();
+                                echo $itemsBlock->setData('type', 'withdrawn')->toHtml();
                             endif;
                             ?>
                         <?php endif; ?>
@@ -139,9 +139,9 @@ $order = $block->getOrder();
                                 <span><?= $block->escapeHtml(__('Non-Withdrawable Items')) ?></span>
                             </strong>
                             <?php
-                            $itemsBlock = $block->getChildBlock('withdrawal.view.items')->setData('type', 'non_withdrawable');
+                            $itemsBlock = $block->getChildBlock('withdrawal.view.items');
                             if ($itemsBlock):
-                                echo $itemsBlock->toHtml();
+                                echo $itemsBlock->setData('type', 'non_withdrawable')->toHtml();
                             endif;
                             ?>
                         <?php endif; ?>
