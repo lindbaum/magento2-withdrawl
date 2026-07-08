@@ -27,6 +27,7 @@ switch ($type) {
         break;
     case 'non_withdrawable':
         $items = $block->getNonWithdrawableItems();
+        $isWithdrawn = false;
         break;
     default:
         $items = $block->getWithdrawnItems();
